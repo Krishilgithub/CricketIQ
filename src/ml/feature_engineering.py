@@ -5,7 +5,9 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-def load_and_filter_data(data_dir='dataset/cricsheet_csv'):
+from config.settings import BRONZE_CRICSHEET_DIR
+
+def load_and_filter_data(data_dir=str(BRONZE_CRICSHEET_DIR)):
     base_dir = Path(data_dir)
     
     matches = pd.read_csv(base_dir / 'matches.csv', low_memory=False)
@@ -219,3 +221,18 @@ def build_live_state_features(conn=None) -> pd.DataFrame:
     matches, deliveries = load_and_filter_data()
     deliveries = deliveries.merge(matches[['match_id', 'winner', 'team1', 'team2']], on='match_id', how='left')
     return deliveries
+
+if __name__ == '__main__':
+    print("Loading data and strictly ensuring we have men's T20 data...")
+    matches, deliveries = load_and_filter_data()
+    print(f"Loaded {len(matches)} matches and {len(deliveries)} deliveries after filtering for men's T20.")
+    print("Unique genders after filter:", matches['gender'].unique())
+    print("\nBuilding match features...")
+    match_features = build_match_features()
+    print(f"Generated {len(match_features)} match-level feature records.")
+    
+    # Save the cleaned features into models or a processed data directory
+    output_path = Path(__file__).parent.parent.parent / "data" / "silver" / "processed_features.csv"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    match_features.to_csv(output_path, index=False)
+    print(f"Saved processed features to {output_path}")

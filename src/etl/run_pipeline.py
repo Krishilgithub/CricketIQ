@@ -150,10 +150,16 @@ def load_silver(conn: duckdb.DuckDBPyConnection):
             END as run_rate,
             source,
             TRY_CAST(match_date AS DATE) as match_date
-        FROM bronze.raw_deliveries
-        WHERE match_id IS NOT NULL
-          AND batter IS NOT NULL
-          AND bowler IS NOT NULL;
+        FROM bronze.raw_deliveries d
+        WHERE d.match_id IS NOT NULL
+          AND d.batter IS NOT NULL
+          AND d.bowler IS NOT NULL
+          AND EXISTS (
+              SELECT 1 FROM bronze.raw_matches m 
+              WHERE m.match_id = d.match_id 
+                AND LOWER(m.gender) = 'male' 
+                AND LOWER(m.match_type) = 't20'
+          );
     """)
 
     silver_del_count = conn.execute("SELECT COUNT(*) FROM silver.deliveries").fetchone()[0]
@@ -209,7 +215,9 @@ def load_silver(conn: duckdb.DuckDBPyConnection):
         FROM bronze.raw_matches
         WHERE match_id IS NOT NULL
           AND team1 IS NOT NULL
-          AND team2 IS NOT NULL;
+          AND team2 IS NOT NULL
+          AND LOWER(gender) = 'male'
+          AND LOWER(match_type) = 't20';
     """)
 
     silver_match_count = conn.execute("SELECT COUNT(*) FROM silver.matches").fetchone()[0]

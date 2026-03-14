@@ -38,7 +38,7 @@ def profile_csv(path: Path) -> dict:
 
 def main() -> None:
     root = Path.cwd()
-    data_dir = root / "data" / "cricsheet_csv"
+    data_dir = root / "data" / "bronze" / "cricsheet_csv"
     out = root / "artifacts"
     out.mkdir(parents=True, exist_ok=True)
 
