@@ -1,5 +1,5 @@
 """AI Analyst chatbot page — Text-to-SQL with context memory and SQL sandbox."""
-import re, json
+import re, json, uuid
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -237,7 +237,21 @@ def _try_auto_chart(reply: str, msgs: list):
 
 
 def render():
-    st.title("🤖 AI Analyst")
+    col1, col2 = st.columns([5, 1])
+    with col1:
+        st.title("🤖 AI Analyst")
+    with col2:
+        st.write("") # spacer
+        if st.button("➕ New Chat", use_container_width=True):
+            new_id = str(uuid.uuid4())
+            st.session_state["current_session_id"] = new_id
+            st.session_state["sessions"][new_id] = {
+                "title": "New Chat",
+                "timestamp": pd.Timestamp.now(),
+                "messages": [],
+            }
+            st.rerun()
+
     st.markdown("Ask anything about T20 cricket. I'll write SQL, query the database, and return an expert analysis.")
 
     hub_con = get_hub_con()
@@ -250,15 +264,19 @@ def render():
             edited_sql = st.text_area("SQL Query", value=default_query, height=120, key="sandbox_sql")
             col_run, col_export = st.columns([1, 1])
             if col_run.form_submit_button("▶️ Run Query"):
-                try:
-                    df = hub_con.execute(edited_sql).df()
-                    st.success(f"✅ Query returned {len(df)} rows.")
-                    st.dataframe(df, use_container_width=True, hide_index=True)
-                    # CSV export
-                    csv = df.to_csv(index=False).encode("utf-8")
-                    st.download_button("⬇️ Download CSV", csv, "query_result.csv", "text/csv")
-                except Exception as e:
-                    st.error(f"SQL Error: {e}")
+                forbidden_sandbox = ["drop", "delete", "insert", "update", "truncate", "alter", "create", "grant", "revoke"]
+                if any(kw in edited_sql.lower() for kw in forbidden_sandbox):
+                    st.error("🚫 Security: Destructive SQL operations are not permitted in the sandbox.")
+                else:
+                    try:
+                        df = hub_con.execute(edited_sql).df()
+                        st.success(f"✅ Query returned {len(df)} rows.")
+                        st.dataframe(df, use_container_width=True, hide_index=True)
+                        # CSV export
+                        csv = df.to_csv(index=False).encode("utf-8")
+                        st.download_button("⬇️ Download CSV", csv, "query_result.csv", "text/csv")
+                    except Exception as e:
+                        st.error(f"SQL Error: {e}")
 
     st.markdown("---")
 
