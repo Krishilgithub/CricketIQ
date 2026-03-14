@@ -11,8 +11,10 @@ from langsmith import traceable
 from src.rag.rag_pipeline import gather_query_context
 from src.rag.retriever import execute_sql
 
+import os
+
 # ── API Config ─────────────────────────────────────────────────────────────
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "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")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL_ID = "google/gemini-2.5-flash"
 

@@ -72,6 +72,17 @@ app_mode = st.sidebar.radio(
 st.sidebar.markdown("---")
 current_sessions = st.session_state.get("sessions", {})
 active_session = current_sessions.get(st.session_state.get("current_session_id", ""), {})
+
+if st.sidebar.button("➕ New Chat", use_container_width=True, type="primary"):
+    new_id = str(uuid.uuid4())
+    st.session_state["current_session_id"] = new_id
+    st.session_state["sessions"][new_id] = {
+        "title": "New Chat",
+        "timestamp": pd.Timestamp.now(),
+        "messages": [],
+    }
+    st.rerun()
+
 st.sidebar.caption(f"💬 Active Chat: *{active_session.get('title', 'New Chat')}*")
 msg_count = len([m for m in active_session.get("messages", []) if m["role"] == "user"])
 st.sidebar.caption(f"📝 {msg_count} question(s) in this session")
