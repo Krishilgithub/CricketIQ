@@ -1,12 +1,18 @@
 # 🏏 CricketIQ: End-to-End AI Cricket Analyst Platform
 
-## 🌟 The Big Picture
+## 🌟 The Big Picture (Elevator Pitch)
 
 **CricketIQ is not just a predictive model; it is a full-scale, production-ready AI intelligence platform.**
 
 We processed over **1.14 million rows** of messy, ball-by-ball historical cricket data and piped it into a high-performance Data Warehouse. On top of that, we built an API, 4 distinct interactive dashboards, an MLOps monitoring suite, and an advanced GenAI Chatbot.
 
 It answers the ultimate question: *Who will win the ICC Men's T20 World Cup?*
+
+### The "ELI5" (Explain Like I'm 5) Summary
+* **What did we build?** An end-to-end AI Cricket Analyst. From raw Cricsheet csvs to a polished UI and an AI chatbot that answers questions using hard math without "hallucinating" (making things up).
+* **What did we do in Feature Engineering?** We turned raw cricket events into 4 massive "game-changing clues" (Toss impact, Venue average, Team form, Head-to-Head win rate). We made sure the math ONLY uses historical clues from *before* the match started to prevent the AI from "cheating" (data leakage).
+* **What did we do in Model Training & Accuracy?** We trained a Logistic Regression model that confidently beats random guessing (Log-Loss of 0.653). We also mathematically "calibrated" it—meaning if the model says India has a 75% chance to win, historically matched teams in that exact scenario actually go on to win exactly 75% of the time.
+* **What did we do in MLOps?** We built a radar system (Evidently AI) that watches the live data. If cricket strategies structurally change (like the crazy 250+ run scores in the recent IPL), the radar catches the "Data Drift" and automatically retrains the AI so it doesn't get dumber over time.
 
 ---
 
