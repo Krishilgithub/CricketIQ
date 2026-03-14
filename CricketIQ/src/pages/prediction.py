@@ -88,6 +88,9 @@ def _recent_form_chart(team: str) -> go.Figure | None:
         return None
 
 
+from langsmith import traceable
+
+@traceable(run_type="chain", name="Prediction UI Interaction")
 def render():
     st.title("🔮 Match Prediction")
     st.markdown("""<div class='metric-card'>
@@ -128,31 +131,23 @@ def render():
 
     # ── Compute Predictions ───────────────────────────────────────────────
     with st.spinner("🧠 Running ML model..."):
-        h2h_rate = get_h2h_rate(team1)
-        venue_avg = get_venue_avg(venue)
-        team1_form = get_team_form(team1)
         team1_stats = _get_team_additional_stats(team1)
         team2_stats = _get_team_additional_stats(team2)
 
-        feats = pd.DataFrame([{
-            "toss_bat": 1 if toss_decision == "Bat" else 0,
-            "venue_avg_1st_inns_runs": venue_avg,
-            "team_1_h2h_win_rate": h2h_rate,
-            "team_1_form_last5": team1_form,
-            "team_2_form_last5": 1 - team1_form,
-        }])
-        try:
-            win_prob_t1 = float(champion["model"].predict_proba(feats)[0][1])
-        except Exception:
-            win_prob_t1 = h2h_rate  # Fallback
-
-        win_prob_t2 = 1 - win_prob_t1
+        from src.ml.predictor import predict_match
+        pred = predict_match(team1, team2, venue, toss_decision)
+        
+        win_prob_t1 = pred["win_prob_t1"]
+        win_prob_t2 = pred["win_prob_t2"]
+        h2h_rate = pred["h2h_rate"]
+        team1_form = pred["team1_form"]
+        venue_avg = pred["venue_avg"]
+        favourite = pred["favourite"]
+        fav_prob = pred["fav_prob"]
+        confidence = pred["confidence"]
 
     # ── Match Verdict Banner ──────────────────────────────────────────────
     st.markdown("---")
-    favourite = team1 if win_prob_t1 >= win_prob_t2 else team2
-    fav_prob = max(win_prob_t1, win_prob_t2) * 100
-    confidence = "High" if fav_prob >= 62 else ("Moderate" if fav_prob >= 54 else "Low")
     conf_color = "#22c55e" if confidence == "High" else ("#f59e0b" if confidence == "Moderate" else "#ef4444")
 
     st.markdown(f"""
