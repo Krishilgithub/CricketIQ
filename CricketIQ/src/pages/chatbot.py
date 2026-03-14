@@ -5,8 +5,10 @@ import pandas as pd
 import plotly.express as px
 import requests
 
-from src.genai.rag_context import execute_sql, get_schema_string, extract_entities, get_con
+from src.rag.retriever import execute_sql, extract_entities, get_con
+from src.rag.prompt_builder import get_schema_string
 from src.pages.shared import get_hub_con, load_model, get_h2h_rate, get_venue_avg, get_team_form
+from langsmith import traceable
 
 # ── API Config ─────────────────────────────────────────────────────────────
 OPENROUTER_API_KEY = "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"
@@ -37,6 +39,7 @@ INSTRUCTIONS:
 12. Add emojis for key stats to improve readability 🏏"""
 
 
+@traceable(name="route_query_intent")
 def route_query_intent(user_query: str, history: list) -> dict:
     headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
     sys_prompt = """You are an intelligent query router for a Cricket AI. 
@@ -69,6 +72,7 @@ Return EXACTLY a JSON dict with NO markdown wrapping, like this:
         return {"route": "SQL"}
 
 
+@traceable(name="ml_agent_loop")
 def ml_agent_loop(intent_data: dict, history: list, st_placeholder) -> str:
     champion = load_model()
     if not champion:
@@ -132,6 +136,7 @@ def ml_agent_loop(intent_data: dict, history: list, st_placeholder) -> str:
     except Exception as e:
         return f"⚠️ LLM Error Formatting ML Result: {e}"
 
+@traceable(name="rewrite_query_with_llm")
 def rewrite_query_with_llm(user_query: str, history: list) -> str:
     if not history:
         return user_query
@@ -149,6 +154,7 @@ def rewrite_query_with_llm(user_query: str, history: list) -> str:
         return user_query
 
 
+@traceable(name="agent_loop")
 def agent_loop(standalone_query: str, history: list, st_placeholder) -> str:
     con = get_con()
     entities = extract_entities(standalone_query, con)

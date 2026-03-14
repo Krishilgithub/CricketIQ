@@ -1,0 +1,56 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "1. Start MLflow",
+            "type": "shell",
+            "command": "cd CricketIQ; .\\.venv\\Scripts\\activate; mlflow ui --port 5050",
+            "isBackground": true,
+            "presentation": {
+                "group": "cricketiq-run",
+                "panel": "split",
+                "reveal": "always",
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "2. Start Streamlit",
+            "type": "shell",
+            "command": "cd CricketIQ; .\\.venv\\Scripts\\activate; $env:PYTHONPATH='.'; streamlit run src/app.py --server.port 8501",
+            "isBackground": true,
+            "presentation": {
+                "group": "cricketiq-run",
+                "panel": "split",
+                "reveal": "always"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "3. Start Airflow (Docker)",
+            "type": "shell",
+            "command": "cd CricketIQ; docker compose -f docker-compose.airflow.yml up airflow-init -d; docker compose -f docker-compose.airflow.yml up -d",
+            "isBackground": true,
+            "presentation": {
+                "group": "cricketiq-run",
+                "panel": "split",
+                "reveal": "always"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "🚀 Launch Full CricketIQ Project",
+            "dependsOn": [
+                "1. Start MLflow",
+                "2. Start Streamlit",
+                "3. Start Airflow (Docker)"
+            ],
+            "dependsOrder": "parallel",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}

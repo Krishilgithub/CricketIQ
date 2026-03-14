@@ -147,6 +147,32 @@ def ingest_new_json_files(
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
+import subprocess
+import os
+
+def trigger_downstream_etl():
+    """Trigger the dbt transformations and feature engineering pipelines incrementally after real-time ingest."""
+    log.info("Triggering real-time ETL pipeline (dbt run + feature_engineering)...")
+    try:
+        # Run DBT models
+        dbt_dir = resolve_path("dbt")
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(resolve_path("."))
+        env["DUCKDB_PATH"] = str(resolve_path(get_config()["paths"]["duckdb_path"]))
+
+        subprocess.run(["dbt", "build"], cwd=dbt_dir, env=env, check=True)
+        log.info("✅ dbt transformations completed successfully.")
+
+        # Run feature engineering pipeline incrementally
+        feat_script = resolve_path("src/features/feature_engineering.py")
+        subprocess.run(["python", str(feat_script)], env=env, check=True)
+        log.info("✅ Feature engineering completed successfully.")
+        
+    except subprocess.CalledProcessError as e:
+        log.error(f"❌ ETL Pipeline failed: {e}")
+    except Exception as e:
+        log.error(f"❌ Error setting up ETL pipeline: {e}")
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="CricketIQ live/incremental JSON ingestion")
     parser.add_argument(
@@ -175,11 +201,14 @@ def main() -> None:
     if args.watch:
         log.info(f"Watch mode: polling {drop_folder} every {args.interval}s")
         while True:
-            ingest_new_json_files(duckdb_path, drop_folder, tmp_dir)
+            summary = ingest_new_json_files(duckdb_path, drop_folder, tmp_dir)
+            if summary:
+                trigger_downstream_etl()
             time.sleep(args.interval)
     else:
-        ingest_new_json_files(duckdb_path, drop_folder, tmp_dir)
-
+        summary = ingest_new_json_files(duckdb_path, drop_folder, tmp_dir)
+        if summary:
+            trigger_downstream_etl()
 
 if __name__ == "__main__":
     main()
