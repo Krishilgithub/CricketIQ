@@ -1,9 +1,9 @@
 {
-  "run_timestamp": "20260315_005621",
+  "run_timestamp": "20260315_013952",
   "champion_model": "LogisticRegression",
-  "champion_cv_log_loss": 0.640144,
-  "champion_cv_roc_auc": 0.6668740000000001,
-  "champion_cv_f1": 0.634584,
+  "champion_cv_log_loss": 0.640502,
+  "champion_cv_roc_auc": 0.665564,
+  "champion_cv_f1": 0.634124,
   "feature_count": 16,
   "numerical_features": [
     "venue_avg_1st_inns_runs",
@@ -25,39 +25,39 @@
     "team_1",
     "team_2"
   ],
-  "training_dataset": "C:\\Users\\Krishil Agrawal\\Desktop\\Hackathons\\KenexAI\\CricketIQ\\artifacts\\training_dataset.parquet",
+  "training_dataset": "D:\\Projects\\CricketIQ\\CricketIQ\\artifacts\\training_dataset.parquet",
   "all_model_results": {
     "LogisticRegression": {
-      "cv_log_loss": 0.640144,
-      "cv_roc_auc": 0.6668740000000001,
-      "cv_accuracy": 0.623644,
-      "cv_f1": 0.634584,
-      "cv_precision": 0.6167,
-      "cv_recall": 0.654946
+      "cv_log_loss": 0.640502,
+      "cv_roc_auc": 0.665564,
+      "cv_accuracy": 0.624418,
+      "cv_f1": 0.634124,
+      "cv_precision": 0.6179479999999999,
+      "cv_recall": 0.6524439999999999
     },
     "RandomForest": {
-      "cv_log_loss": 0.6538660000000001,
-      "cv_roc_auc": 0.690276,
-      "cv_accuracy": 0.644184,
-      "cv_f1": 0.6495900000000001,
-      "cv_precision": 0.641094,
-      "cv_recall": 0.661854
+      "cv_log_loss": 0.653632,
+      "cv_roc_auc": 0.6903180000000001,
+      "cv_accuracy": 0.6410860000000002,
+      "cv_f1": 0.642948,
+      "cv_precision": 0.638854,
+      "cv_recall": 0.6492140000000001
     },
     "XGBoost": {
-      "cv_log_loss": 0.646666,
-      "cv_roc_auc": 0.676644,
-      "cv_accuracy": 0.62907,
-      "cv_f1": 0.6224959999999999,
-      "cv_precision": 0.6360399999999999,
-      "cv_recall": 0.6137680000000001
+      "cv_log_loss": 0.651818,
+      "cv_roc_auc": 0.67106,
+      "cv_accuracy": 0.63062,
+      "cv_f1": 0.62836,
+      "cv_precision": 0.6347579999999999,
+      "cv_recall": 0.627194
     },
     "LightGBM": {
-      "cv_log_loss": 0.6806180000000001,
-      "cv_roc_auc": 0.650872,
-      "cv_accuracy": 0.6050380000000001,
-      "cv_f1": 0.6055059999999999,
-      "cv_precision": 0.605918,
-      "cv_recall": 0.608098
+      "cv_log_loss": 0.6874480000000001,
+      "cv_roc_auc": 0.646332,
+      "cv_accuracy": 0.600776,
+      "cv_f1": 0.596542,
+      "cv_precision": 0.60358,
+      "cv_recall": 0.59308
     }
   }
 }

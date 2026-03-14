@@ -6,7 +6,7 @@ import plotly.express as px
 import requests
 
 from src.genai.rag_context import execute_sql, get_schema_string, extract_entities, get_con
-from src.pages.shared import get_hub_con
+from src.pages.shared import get_hub_con, load_model, get_h2h_rate, get_venue_avg, get_team_form
 
 # ── API Config ─────────────────────────────────────────────────────────────
 OPENROUTER_API_KEY = "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"
@@ -36,6 +36,101 @@ INSTRUCTIONS:
 11. AUTO-SUGGESTIONS: At the very end of your final response, ALWAYS provide exactly 3 highly relevant follow-up questions under a "### 🤔 Suggested Follow-ups" heading as bullet points.
 12. Add emojis for key stats to improve readability 🏏"""
 
+
+def route_query_intent(user_query: str, history: list) -> dict:
+    headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
+    sys_prompt = """You are an intelligent query router for a Cricket AI. 
+Analyze the user query and decide if it requires:
+- 'ML': A predictive model for match outcomes (e.g., 'predict the winner', 'what are the chances', 'win probability between A and B').
+- 'SQL': General historical statistics, past match details, scores, player records, etc.
+
+Return EXACTLY a JSON dict with NO markdown wrapping, like this:
+{
+  "route": "ML" or "SQL",
+  "team1": "Specific Team Name or null (e.g. 'India')",
+  "team2": "Specific Team Name or null (e.g. 'Australia')",
+  "venue": "Venue Name or null (e.g. 'Eden Gardens')",
+  "toss_decision": "Bat" or "Field" (default to "Bat")
+}"""
+    messages = [{"role": "system", "content": sys_prompt}]
+    for turn in history[-4:]:
+        if turn["role"] in ["user", "assistant"]:
+            messages.append({"role": turn["role"], "content": turn["content"]})
+    messages.append({"role": "user", "content": user_query})
+    
+    try:
+        response = requests.post(OPENROUTER_URL, headers=headers, json={"model": MODEL_ID, "messages": messages, "max_tokens": 100, "temperature": 0.0}, timeout=10)
+        content = response.json()["choices"][0]["message"]["content"].strip()
+        match = re.search(r'\{.*\}', content, re.DOTALL)
+        if match:
+            return json.loads(match.group(0))
+        return {"route": "SQL"}
+    except Exception:
+        return {"route": "SQL"}
+
+
+def ml_agent_loop(intent_data: dict, history: list, st_placeholder) -> str:
+    champion = load_model()
+    if not champion:
+        return "⚠️ ML Model not found. Please train it first."
+    
+    t1 = intent_data.get("team1") or "India"
+    t2 = intent_data.get("team2") or "Australia"
+    venue = intent_data.get("venue") or "Eden Gardens"
+    toss = intent_data.get("toss_decision") or "Bat"
+    
+    with st_placeholder.container():
+        st.info(f"🔮 **ML Prediction Route Triggered**\n\nPredicting: **{t1}** vs **{t2}** at **{venue}** (Toss: **{toss}**)")
+    
+    # Calculate features
+    try:
+        h2h = get_h2h_rate(t1)
+        v_avg = get_venue_avg(venue)
+        t1_form = get_team_form(t1)
+        t2_form = get_team_form(t2)
+        
+        feats = pd.DataFrame([{
+            "toss_bat": 1 if toss == "Bat" else 0,
+            "venue_avg_1st_inns_runs": v_avg,
+            "team_1_h2h_win_rate": h2h,
+            "team_1_form_last5": t1_form,
+            "team_2_form_last5": 1 - t2_form,
+        }])
+        
+        win_prob_t1 = float(champion["model"].predict_proba(feats)[0][1])
+        win_prob_t2 = 1.0 - win_prob_t1
+    except Exception as e:
+        return f"⚠️ ML Execution error: {e}"
+
+    # Ask the LLM to format the response nicely based on these ML results
+    headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"}
+    sys_prompt = "You are CricketIQ. Structure a compelling match prediction narrative using the provided ML model probabilities, and include the feature data used (H2H, Team Form, Venue Avg). Always include suggestions for follow-ups."
+    
+    ml_context = f"""
+    ML Prediction Results:
+    Match: {t1} vs {t2}
+    Venue: {venue}
+    {t1} Win Probability: {win_prob_t1*100:.1f}%
+    {t2} Win Probability: {win_prob_t2*100:.1f}%
+    
+    Features Used:
+    - {t1} Head-to-Head Win Rate overall: {h2h*100:.1f}%
+    - Venue ({venue}) Avg 1st Inns: {v_avg:.1f}
+    - {t1} Recent Form Score: {t1_form:.2f}
+    - {t2} Recent Form Score: {t2_form:.2f}
+    """
+    
+    messages = [{"role": "system", "content": sys_prompt}]
+    for turn in history[-4:]:
+        if turn["role"] in ["user", "assistant"]:
+            messages.append({"role": turn["role"], "content": turn["content"]})
+    messages.append({"role": "user", "content": f"The ML Model just returned these results:\n{ml_context}\n\nPlease generate a response to the user."})
+    
+    try:
+        response = requests.post(OPENROUTER_URL, headers=headers, json={"model": MODEL_ID, "messages": messages, "max_tokens": 800, "temperature": 0.4}, timeout=20)
+        return response.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"⚠️ LLM Error Formatting ML Result: {e}"
 
 def rewrite_query_with_llm(user_query: str, history: list) -> str:
     if not history:
@@ -222,11 +317,16 @@ def render():
         status_placeholder = st.empty()
         with st.spinner("🧠 Agent is thinking..."):
             history_for_rewrite = msgs[:-1]
-            standalone_query = rewrite_query_with_llm(user_input, history_for_rewrite)
-            if standalone_query.lower() != user_input.lower():
-                status_placeholder.caption(f"*Contextualized: '{standalone_query}'*")
-
-            reply = agent_loop(standalone_query, history_for_rewrite, status_placeholder)
+            # Route Intent
+            intent = route_query_intent(user_input, history_for_rewrite)
+            
+            if intent.get("route") == "ML":
+                reply = ml_agent_loop(intent, history_for_rewrite, status_placeholder)
+            else:
+                standalone_query = rewrite_query_with_llm(user_input, history_for_rewrite)
+                if standalone_query.lower() != user_input.lower():
+                    status_placeholder.caption(f"*Contextualized: '{standalone_query}'*")
+                reply = agent_loop(standalone_query, history_for_rewrite, status_placeholder)
 
         current_session["messages"].append({"role": "assistant", "content": reply})
         st.rerun()
