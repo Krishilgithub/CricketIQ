@@ -148,12 +148,12 @@ def get_top_bowlers():
 @st.cache_data
 def get_venue_heatmap():
     heatmap_q = """
-    SELECT team_1 as team, venue,
-           ROUND(AVG(team_1_win::FLOAT) * 100, 0) as win_pct,
-           COUNT(*) as matches
-    FROM main_gold.fact_matches
-    JOIN main_silver.slv_match_teams t ON main_gold.fact_matches.match_id = t.match_id
-    GROUP BY team, venue HAVING matches >= 5
+    SELECT t.team as team, m.venue as venue,
+           ROUND(AVG(CASE WHEN m.winner = t.team THEN 1.0 ELSE 0.0 END) * 100, 0) as win_pct,
+           COUNT(m.match_id) as matches
+    FROM main_gold.fact_matches m
+    JOIN main_silver.slv_match_teams t ON m.match_id = t.match_id
+    GROUP BY t.team, m.venue HAVING matches >= 5
     ORDER BY win_pct DESC
     """
     return con.execute(heatmap_q).df()
@@ -260,14 +260,53 @@ if persona == "🎯 Team Analyst":
     c4.metric("Last 5-Match Form", f"{team1_form*100:.1f}%")
 
     if win_prob is not None:
-        fig = go.Figure(go.Bar(
-            x=[win_prob * 100, (1 - win_prob) * 100],
-            y=[team1, team2],
-            orientation="h",
-            marker_color=["#2ea043", "#da3633"],
-        ))
-        fig.update_layout(title="Win Probability", xaxis_title="Win % →", template="plotly_dark", height=200)
-        st.plotly_chart(fig, use_container_width=True)
+        st.markdown("---")
+        st.subheader("🔍 AI Feature Impact Analysis")
+        st.caption(f"How different factors influence {team1}'s chance of winning.")
+        
+        # Calculate Linear Feature Contributions (Pseudo-SHAP)
+        model = champion["model"]
+        clf = model.named_steps["clf"]
+        scaler = model.named_steps["scaler"]
+        
+        base_coefs = [est.estimator.coef_[0] for est in clf.calibrated_classifiers_]
+        avg_coef = np.mean(base_coefs, axis=0)
+        
+        x_scaled = scaler.transform(feats)
+        contributions = x_scaled[0] * avg_coef
+        
+        feature_names = [
+            "Batting First", 
+            "Venue Avg Score", 
+            "Head-to-Head Record", 
+            f"{team1} Form", 
+            f"Opponent Form"
+        ]
+        
+        c_chart1, c_chart2 = st.columns([1, 2])
+        
+        with c_chart1:
+            fig = go.Figure(go.Bar(
+                x=[team1, team2],
+                y=[win_prob * 100, (1 - win_prob) * 100],
+                marker_color=["#2ea043", "#da3633"],
+            ))
+            fig.update_layout(title="Win Probability %", yaxis_title="Win %", template="plotly_dark", height=350)
+            st.plotly_chart(fig, use_container_width=True)
+            
+        with c_chart2:
+            waterfall = go.Figure(go.Waterfall(
+                orientation="h",
+                measure=["relative"] * len(feature_names),
+                y=feature_names,
+                x=contributions,
+                textposition="outside",
+                text=[f"{c:+.2f}" for c in contributions],
+                decreasing={"marker": {"color": "#da3633"}},
+                increasing={"marker": {"color": "#2ea043"}},
+            ))
+            waterfall.update_layout(title="What is driving the prediction?", template="plotly_dark", height=350, margin=dict(l=150))
+            st.plotly_chart(waterfall, use_container_width=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
