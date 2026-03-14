@@ -1,0 +1,14 @@
+# RAG Chatbot Dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY config/ config/
+COPY src/ src/
+
+EXPOSE 8502
+
+CMD ["streamlit", "run", "src/genai/chatbot_app.py", "--server.address", "0.0.0.0", "--server.port", "8502"]

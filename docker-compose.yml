@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # ── ETL Pipeline ──
+  etl:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.etl
+    container_name: cricket-etl
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # ── ML Model API ──
+  ml-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ml
+    container_name: cricket-ml-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      etl:
+        condition: service_completed_successfully
+
+  # ── Streamlit Dashboard (all pages) ──
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dashboard
+    container_name: cricket-dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    depends_on:
+      etl:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── RAG Chatbot (standalone) ──
+  chatbot:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.chatbot
+    container_name: cricket-chatbot
+    ports:
+      - "8502:8502"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      etl:
+        condition: service_completed_successfully

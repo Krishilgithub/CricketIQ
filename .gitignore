@@ -1,5 +1,28 @@
-data/t20s_json
-.venv
-data/cricsheet_csv/
+# Data files (too large for git)
+data/raw/
+data/bronze/
+data/silver/
+data/gold/
+data/*.duckdb
+data/chroma_db/
+
+# Models
+models/
+
+# Environment
+.env
 __pycache__/
 *.pyc
+.pytest_cache/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/

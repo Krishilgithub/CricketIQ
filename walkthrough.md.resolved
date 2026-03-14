@@ -1,0 +1,79 @@
+# ICC T20 WC 2026 Predictor — Project Walkthrough
+
+## What Was Built
+
+A complete foundation for the hackathon project at `C:\Users\mmmon\.gemini\antigravity\scratch\icc-t20-wc-predictor\`.
+
+### Dataset Strategy (Your Key Question)
+
+| Decision | Recommendation |
+|----------|---------------|
+| **Primary dataset** | `t20s_male_json.zip` — ALL Men's T20 Internationals (~1,200+ matches) |
+| **Use league data?** | ✅ YES — IPL/BBL/CPL data enriches player profiles and form features |
+| **Player linking** | Cricsheet People Register (`people.csv`) maps player IDs across all datasets |
+| **Competitive edge** | Frame as "Multi-Source T20 Intelligence System" — leagues for features, T20I for predictions |
+
+### Files Created (17 files)
+
+| File | Purpose |
+|------|---------|
+| [settings.py](file:///C:/Users/mmmon/.gemini/antigravity/scratch/icc-t20-wc-predictor/config/settings.py) | Central config: paths, URLs, constants |
+| [download_data.py](file:///C:/Users/mmmon/.gemini/antigravity/scratch/icc-t20-wc-predictor/src/ingestion/download_data.py) | Downloads & extracts Cricsheet datasets |
+| [parse_cricsheet.py](file:///C:/Users/mmmon/.gemini/antigravity/scratch/icc-t20-wc-predictor/src/ingestion/parse_cricsheet.py) | JSON parser → Polars DataFrames (ball-by-ball + match info + registry) |
+| [schema.py](file:///C:/Users/mmmon/.gemini/antigravity/scratch/icc-t20-wc-predictor/src/warehouse/schema.py) | DuckDB Star Schema: 5 dim + 4 fact tables across Bronze/Silver/Gold |
+| [run_pipeline.py](file:///C:/Users/mmmon/.gemini/antigravity/scratch/icc-t20-wc-predictor/src/etl/run_pipeline.py) | Full ETL: Bronze→Silver→Gold with cleaning, enrichment, aggregation |
+| [stream_simulator.py](file:///C:/Users/mmmon/.gemini/antigravity/scratch/icc-t20-wc-predictor/src/simulation/stream_simulator.py) | Ball-by-ball streaming (console/CSV/Kafka modes) |
+| [docker-compose.yml](file:///C:/Users/mmmon/.gemini/antigravity/scratch/icc-t20-wc-predictor/docker-compose.yml) | 5-service deployment (DB, ETL, ML API, Dashboard, Chatbot) |
+| 4× Dockerfiles | ETL, ML, Dashboard, Chatbot containers |
+
+### Architecture
+
+```mermaid
+graph TB
+    subgraph "Data Sources"
+        A["Cricsheet T20I JSON"]
+        B["Cricsheet IPL/BBL/CPL JSON"]
+        C["People Register CSV"]
+    end
+    subgraph "Medallion Architecture"
+        D["🥉 Bronze - Raw Ingestion"]
+        E["🥈 Silver - Cleaned & Normalized"]
+        F["🥇 Gold - Star Schema"]
+    end
+    A & B & C --> D --> E --> F
+    F --> G["Dashboards"]
+    F --> H["ML Models"]
+    F --> I["RAG Chatbot"]
+```
+
+## How to Run
+
+```bash
+# Navigate to project
+cd C:\Users\mmmon\.gemini\antigravity\scratch\icc-t20-wc-predictor
+
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Download datasets (downloads ~100MB+ from Cricsheet)
+python src/ingestion/download_data.py
+
+# 3. Run the full ETL pipeline
+python src/etl/run_pipeline.py
+
+# 4. Try the simulator (streams 5 matches to console)
+python src/simulation/stream_simulator.py --interval 0.1
+```
+
+## What's Next (Remaining Steps)
+
+| Step | Status | Description |
+|------|--------|-------------|
+| Step 5 | 🔲 | Data Quality & EDA dashboard (Streamlit) |
+| Step 6 | 🔲 | Persona-based analytical dashboards |
+| Step 7 | 🔲 | ML models (match prediction, player clustering, etc.) |
+| Step 8 | 🔲 | GenAI (RAG chatbot, NL-to-SQL) |
+| Step 9 | 🔲 | Optimization (batting order, squad selection) |
+
+> [!TIP]
+> Set `C:\Users\mmmon\.gemini\antigravity\scratch\icc-t20-wc-predictor` as your active workspace for further development.
