@@ -13,8 +13,9 @@ def get_hub_con():
     return duckdb.connect(str(resolve_path(cfg["paths"]["duckdb_path"])), read_only=True)
 
 
-@st.cache_resource
+@st.cache_resource(ttl=60)
 def load_model():
+    """Load champion model. TTL=60s ensures new model is picked up after retraining."""
     cfg = get_config()
     db_path = str(resolve_path(cfg["paths"]["models_dir"])) + "/champion_model.pkl"
     if os.path.exists(db_path):
