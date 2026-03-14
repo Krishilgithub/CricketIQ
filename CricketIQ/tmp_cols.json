@@ -1,0 +1,96 @@
+{
+  "matches": [
+    "match_id",
+    "data_version",
+    "created",
+    "revision",
+    "match_date",
+    "season",
+    "event_name",
+    "event_match_number",
+    "match_type",
+    "match_type_number",
+    "gender",
+    "team_type",
+    "venue",
+    "city",
+    "overs",
+    "balls_per_over",
+    "toss_winner",
+    "toss_decision",
+    "winner",
+    "result_type",
+    "result_margin",
+    "result_text",
+    "method"
+  ],
+  "match_teams": [
+    "match_id",
+    "team"
+  ],
+  "innings": [
+    "match_id",
+    "innings_number",
+    "team",
+    "total_runs",
+    "total_wickets",
+    "total_balls",
+    "extras_byes",
+    "extras_legbyes",
+    "extras_noballs",
+    "extras_wides",
+    "extras_penalty"
+  ],
+  "deliveries": [
+    "match_id",
+    "innings_number",
+    "over",
+    "ball_in_over",
+    "batting_team",
+    "batter",
+    "bowler",
+    "non_striker",
+    "runs_batter",
+    "runs_extras",
+    "runs_total",
+    "extras_byes",
+    "extras_legbyes",
+    "extras_noballs",
+    "extras_wides",
+    "extras_penalty",
+    "review_by",
+    "review_batter",
+    "review_decision",
+    "review_type",
+    "replacement_role",
+    "replacement_team",
+    "replacement_in",
+    "replacement_out"
+  ],
+  "wickets": [
+    "match_id",
+    "innings_number",
+    "over",
+    "ball_in_over",
+    "batting_team",
+    "player_out",
+    "kind",
+    "fielders"
+  ],
+  "powerplays": [
+    "match_id",
+    "innings_number",
+    "powerplay_type",
+    "from_over",
+    "to_over"
+  ],
+  "player_of_match": [
+    "match_id",
+    "player"
+  ],
+  "officials": [
+    "match_id",
+    "official_role",
+    "official_name"
+  ]
+}

@@ -1,0 +1,18 @@
+cricketiq_dev:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', 'artifacts/cricketiq.duckdb') }}"
+      threads: 4
+      extensions:
+        - httpfs
+        - json
+
+    prod:
+      type: duckdb
+      path: "artifacts/cricketiq_prod.duckdb"
+      threads: 8
+      extensions:
+        - httpfs
+        - json

@@ -1,0 +1,23 @@
+version: 2
+
+sources:
+  - name: bronze
+    schema: bronze
+    tables:
+      - name: matches
+      - name: match_teams
+      - name: innings
+      - name: deliveries
+      - name: wickets
+      - name: powerplays
+      - name: player_of_match
+      - name: officials
+      - name: given_matches
+      - name: given_batting_stats
+      - name: given_bowling_stats
+      - name: given_key_scorecards
+      - name: given_squads
+      - name: given_points_table
+      - name: given_venues
+      - name: given_awards
+      - name: given_tournament_summary

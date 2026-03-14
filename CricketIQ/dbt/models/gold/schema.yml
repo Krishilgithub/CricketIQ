@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: fact_matches
+    columns:
+      - name: match_id
+        tests:
+          - unique
+          - not_null
+      - name: match_date
+        tests:
+          - not_null
+      - name: team_1
+        tests:
+          - not_null
+  
+  - name: fact_deliveries
+    columns:
+      - name: match_id
+        tests:
+          - not_null
+      - name: innings_ball_sequence
+        tests:
+          - not_null
+
+  - name: mart_team_form
+    columns:
+      - name: match_id
+        tests:
+          - not_null
+      - name: team
+        tests:
+          - not_null
