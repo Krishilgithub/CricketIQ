@@ -211,7 +211,12 @@ def create_gold_tables(conn: duckdb.DuckDBPyConnection):
 
     # ── DIMENSION TABLES ──
 
-    conn.execute("DROP TABLE IF EXISTS gold.dim_player;")
+    conn.execute("DROP TABLE IF EXISTS gold.fact_match_results CASCADE;")
+    conn.execute("DROP TABLE IF EXISTS gold.fact_batting_innings CASCADE;")
+    conn.execute("DROP TABLE IF EXISTS gold.fact_bowling_innings CASCADE;")
+    conn.execute("DROP TABLE IF EXISTS gold.fact_innings_summary CASCADE;")
+
+    conn.execute("DROP TABLE IF EXISTS gold.dim_player CASCADE;")
     conn.execute("""
         CREATE TABLE gold.dim_player (
             player_key      INTEGER PRIMARY KEY,
@@ -375,8 +380,7 @@ def create_gold_tables(conn: duckdb.DuckDBPyConnection):
             sixes           INTEGER,
             dot_balls       INTEGER,
             extras          INTEGER,
-            source          VARCHAR,
-            PRIMARY KEY(match_id, innings)
+            source          VARCHAR
         );
     """)
 

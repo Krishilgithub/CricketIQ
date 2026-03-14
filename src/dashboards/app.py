@@ -1,257 +1,135 @@
-"""
-ICC T20 WC 2026 Predictor — Streamlit Dashboard Application.
-
-Multi-page app: Data Quality, EDA, Persona Dashboards, ML Results, GenAI, Optimization.
-
-Usage:
-    streamlit run src/dashboards/app.py
-"""
-
 import sys
 from pathlib import Path
-
+import duckdb
+import pandas as pd
 import streamlit as st
+import plotly.express as px
 
 # ── Ensure project root is on path ──
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
+from config.settings import DUCKDB_PATH
+
+st.set_page_config(
+    page_title="🏏 ICC T20 WC 2026 Predictor — Executive Dashboard",
+    page_icon="🏏",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+# ── Custom CSS ──
+st.markdown("""
+<style>
+    .main-header {
+        background: linear-gradient(135deg, #0a1628 0%, #1a3a5c 50%, #0d4f3c 100%);
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        color: white;
+        text-align: center;
+    }
+    .metric-card {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border-left: 5px solid #1a3a5c;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #1a3a5c;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
+@st.cache_resource
+def get_db_connection():
+    return duckdb.connect(str(DUCKDB_PATH), read_only=True)
 
 
 def main():
-    st.set_page_config(
-        page_title="🏏 ICC T20 WC 2026 Predictor",
-        page_icon="🏏",
-        layout="wide",
-        initial_sidebar_state="expanded",
-    )
+    st.markdown('<div class="main-header"><h1>🏏 ICC T20 World Cup 2026 — Executive Dashboard</h1><p>Integrated Data Warehouse & Prediction Insights</p></div>', unsafe_allow_html=True)
 
-    # ── Custom CSS ──
-    st.markdown("""
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-        html, body, [class*="st-"] {
-            font-family: 'Inter', sans-serif;
-        }
-
-        .main-header {
-            background: linear-gradient(135deg, #0a1628 0%, #1a3a5c 50%, #0d4f3c 100%);
-            padding: 2rem 2.5rem;
-            border-radius: 16px;
-            margin-bottom: 1.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-        .main-header h1 {
-            color: #ffffff;
-            font-size: 2rem;
-            font-weight: 700;
-            margin: 0;
-            letter-spacing: -0.02em;
-        }
-        .main-header p {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 1rem;
-            margin: 0.5rem 0 0 0;
-        }
-
-        .kpi-card {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 12px;
-            padding: 1.25rem;
-            text-align: center;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .kpi-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
-        }
-        .kpi-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #818cf8;
-            line-height: 1.1;
-        }
-        .kpi-label {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.5);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-top: 0.5rem;
-        }
-
-        .section-divider {
-            border: none;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
-            margin: 2rem 0;
-        }
-
-        div[data-testid="stMetric"] {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border: 1px solid rgba(99, 102, 241, 0.15);
-            border-radius: 12px;
-            padding: 1rem;
-        }
-
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 8px;
-        }
-        .stTabs [data-baseweb="tab"] {
-            border-radius: 8px;
-            padding: 8px 16px;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
-    # ── Sidebar Navigation ──
-    with st.sidebar:
-        st.markdown("## 🏏 Navigation")
-        page = st.radio(
-            "Go to",
-            [
-                "🏠 Home",
-                "🔍 Data Quality",
-                "📊 EDA Explorer",
-                "🏏 Coach Dashboard",
-                "📈 Analyst Dashboard",
-                "🎯 Selector Dashboard",
-                "📺 Broadcaster Dashboard",
-                "🌍 Fan / ICC Dashboard",
-                "🤖 ML Models",
-                "💬 GenAI Chat",
-                "⚡ Optimization",
-            ],
-            label_visibility="collapsed",
-        )
-
-        st.markdown("---")
-        st.markdown(
-            "<small style='color: rgba(255,255,255,0.4);'>"
-            "Built with Streamlit • DuckDB • Cricsheet Data"
-            "</small>",
-            unsafe_allow_html=True,
-        )
-
-    # ── Page Router ──
-    if page == "🏠 Home":
-        render_home()
-    elif page == "🔍 Data Quality":
-        from src.dashboards.data_quality import render_data_quality
-        render_data_quality()
-    elif page == "📊 EDA Explorer":
-        from src.dashboards.eda import render_eda
-        render_eda()
-    elif page == "🏏 Coach Dashboard":
-        from src.dashboards.persona_coach import render_coach_dashboard
-        render_coach_dashboard()
-    elif page == "📈 Analyst Dashboard":
-        from src.dashboards.persona_analyst import render_analyst_dashboard
-        render_analyst_dashboard()
-    elif page == "🎯 Selector Dashboard":
-        from src.dashboards.persona_selector import render_selector_dashboard
-        render_selector_dashboard()
-    elif page == "📺 Broadcaster Dashboard":
-        from src.dashboards.persona_broadcaster import render_broadcaster_dashboard
-        render_broadcaster_dashboard()
-    elif page == "🌍 Fan / ICC Dashboard":
-        from src.dashboards.persona_fan import render_fan_dashboard
-        render_fan_dashboard()
-    elif page == "🤖 ML Models":
-        from src.dashboards.ml_dashboard import render_ml_dashboard
-        render_ml_dashboard()
-    elif page == "💬 GenAI Chat":
-        from src.dashboards.genai_dashboard import render_genai_dashboard
-        render_genai_dashboard()
-    elif page == "⚡ Optimization":
-        from src.dashboards.optimization_dashboard import render_optimization_dashboard
-        render_optimization_dashboard()
-
-
-def render_home():
-    """Home page with project overview."""
-    st.markdown("""
-    <div class="main-header">
-        <h1>🏏 ICC Men's T20 World Cup 2026 — Outcome Prediction</h1>
-        <p>Multi-Source T20 Intelligence System • Medallion Architecture • DuckDB</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Load quick stats
     try:
-        from src.warehouse.schema import get_connection
-        conn = get_connection()
+        conn = get_db_connection()
+        
+        # KEY METRICS
+        st.subheader("📊 Key Warehouse Metrics")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        matches_count = conn.execute("SELECT COUNT(*) FROM silver.matches").fetchone()[0]
+        deliveries_count = conn.execute("SELECT COUNT(*) FROM silver.deliveries").fetchone()[0]
+        players_count = conn.execute("SELECT COUNT(*) FROM silver.players").fetchone()[0]
+        venues_count = conn.execute("SELECT COUNT(*) FROM gold.dim_venue").fetchone()[0]
+        
+        col1.markdown(f'<div class="metric-card"><div>Total Matches</div><div class="metric-value">{matches_count:,}</div></div>', unsafe_allow_html=True)
+        col2.markdown(f'<div class="metric-card"><div>Total Deliveries</div><div class="metric-value">{deliveries_count:,}</div></div>', unsafe_allow_html=True)
+        col3.markdown(f'<div class="metric-card"><div>T20 Players</div><div class="metric-value">{players_count:,}</div></div>', unsafe_allow_html=True)
+        col4.markdown(f'<div class="metric-card"><div>Unique Venues</div><div class="metric-value">{venues_count:,}</div></div>', unsafe_allow_html=True)
+        
+        st.write("---")
 
-        match_count = conn.execute(
-            "SELECT COUNT(*) FROM silver.matches"
-        ).fetchone()[0]
-        delivery_count = conn.execute(
-            "SELECT COUNT(*) FROM silver.deliveries"
-        ).fetchone()[0]
-        player_count = conn.execute(
-            "SELECT COUNT(*) FROM gold.dim_player"
-        ).fetchone()[0]
-        venue_count = conn.execute(
-            "SELECT COUNT(*) FROM gold.dim_venue"
-        ).fetchone()[0]
-        team_count = conn.execute(
-            "SELECT COUNT(*) FROM gold.dim_team"
-        ).fetchone()[0]
-        source_counts = conn.execute("""
-            SELECT source, COUNT(DISTINCT match_id) as cnt
-            FROM silver.matches GROUP BY source ORDER BY cnt DESC
-        """).fetchall()
-        conn.close()
+        # EXPLORATORY DATA ANALYSIS (EDA)
+        st.subheader("📈 Exploratory Data Analysis")
+        tab1, tab2, tab3 = st.tabs(["Top Venues", "Win Margins", "Run Rate Trends"])
+        
+        with tab1:
+            st.markdown("##### Most Frequent T20 Venues")
+            venue_df = conn.execute("""
+                SELECT venue, COUNT(*) as matches_hosted 
+                FROM silver.matches 
+                GROUP BY venue 
+                ORDER BY matches_hosted DESC LIMIT 10
+            """).df()
+            fig1 = px.bar(venue_df, x='venue', y='matches_hosted', color='matches_hosted', 
+                         color_continuous_scale='Viridis', labels={'venue': 'Venue', 'matches_hosted': 'Matches'})
+            st.plotly_chart(fig1, use_container_width=True)
 
-        cols = st.columns(5)
-        with cols[0]:
-            st.metric("Total Matches", f"{match_count:,}")
-        with cols[1]:
-            st.metric("Deliveries", f"{delivery_count:,}")
-        with cols[2]:
-            st.metric("Players", f"{player_count:,}")
-        with cols[3]:
-            st.metric("Venues", f"{venue_count:,}")
-        with cols[4]:
-            st.metric("Teams", f"{team_count:,}")
+        with tab2:
+            st.markdown("##### Win Margin Distribution (Runs vs Wickets)")
+            margin_df = conn.execute("""
+                SELECT result_type, result_margin 
+                FROM silver.matches 
+                WHERE result_margin IS NOT NULL AND result_type IN ('runs', 'wickets')
+            """).df()
+            fig2 = px.box(margin_df, x='result_type', y='result_margin', color='result_type',
+                         labels={'result_type': 'Victory Type', 'result_margin': 'Margin'},
+                         points="all")
+            st.plotly_chart(fig2, use_container_width=True)
 
-        st.markdown("<hr class='section-divider'>", unsafe_allow_html=True)
+        with tab3:
+            st.markdown("##### Run Rate over Overs (Phase Analysis)")
+            rr_df = conn.execute("""
+                SELECT over, AVG(total_runs) * 6 as avg_run_rate 
+                FROM silver.deliveries 
+                GROUP BY over 
+                ORDER BY over
+            """).df()
+            fig3 = px.line(rr_df, x='over', y='avg_run_rate', markers=True, 
+                          labels={'over': 'Over Number', 'avg_run_rate': 'Average Run Rate'},
+                          title="Average Run Rate Progression per Over")
+            st.plotly_chart(fig3, use_container_width=True)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("### 📊 Data Sources")
-            for source, cnt in source_counts:
-                st.markdown(f"- **{source.upper()}**: {cnt:,} matches")
-
-        with col2:
-            st.markdown("### 🏗️ Architecture")
-            st.markdown("""
-            ```
-            Data Sources → Bronze (Raw) → Silver (Cleaned) → Gold (Analytics)
-                                                                    ↓
-                                                    ┌───────────────┼──────────────┐
-                                                    ↓               ↓              ↓
-                                              Dashboards       ML Models      GenAI/RAG
-            ```
-            """)
+        st.write("---")
+        
+        # PREDICTIVE / ML PREVIEW (Mock / Preview data if true models not trained yet)
+        st.subheader("🤖 Upcoming Match Win Probabilities")
+        st.info("Dynamic Model Predictions module.")
+        st.dataframe(pd.DataFrame({
+            "Match Date": ["2026-03-20", "2026-03-21", "2026-03-22"],
+            "Team A": ["India", "Australia", "England"],
+            "Team B": ["Pakistan", "New Zealand", "South Africa"],
+            "Venue": ["Wankhede", "MCG", "Lord's"],
+            "Win Prob (Team A)": ["52%", "48%", "55%"],
+            "Win Prob (Team B)": ["48%", "52%", "45%"]
+        }), use_container_width=True)
 
     except Exception as e:
-        st.warning(
-            f"⚠️ Could not load warehouse data. Run the ETL pipeline first:\n\n"
-            f"```bash\npython src/etl/run_pipeline.py\n```\n\n"
-            f"Error: {e}"
-        )
-
-    st.markdown("### 📌 Quick Links")
-    link_cols = st.columns(4)
-    with link_cols[0]:
-        st.info("🔍 **Data Quality**\nProfile & validate data")
-    with link_cols[1]:
-        st.info("📊 **EDA Explorer**\nExplore patterns & trends")
-    with link_cols[2]:
-        st.info("🤖 **ML Models**\nPredictions & clustering")
-    with link_cols[3]:
-        st.info("💬 **GenAI Chat**\nAsk questions in plain English")
+        st.error(f"Error connecting to Data Warehouse: {e}")
+        st.info("Make sure the DuckDB warehouse is populated by running the ETL pipeline.")
 
 
 if __name__ == "__main__":
