@@ -40,25 +40,22 @@ def predict_match(team1: str, team2: str, venue: str, toss_decision: str) -> dic
     team1_venue_wr = get_team_venue_win_rate(team1, venue)
     team2_venue_wr = get_team_venue_win_rate(team2, venue)
     
-    form_diff = team1_form5 - team2_form5
+    h2h_advantage = h2h_rate - 0.5
+    form_last5_diff = team1_form5 - team2_form5
+    form_last10_diff = team1_form10 - team2_form10
     momentum_diff = team1_momentum - team2_momentum
+    venue_win_rate_diff = team1_venue_wr - team2_venue_wr
     
     # Build feature DataFrame matching EXACTLY the training pipeline columns
     feats = pd.DataFrame([{
         "toss_bat": 1 if toss_decision == "Bat" else 0,
         "venue_avg_1st_inns_runs": venue_avg,
         "venue_chase_success_rate": venue_chase_rate,
-        "team_1_h2h_win_rate": h2h_rate,
-        "team_1_form_last5": team1_form5,
-        "team_1_form_last10": team1_form10,
-        "team_1_momentum": team1_momentum,
-        "team_2_form_last5": team2_form5,
-        "team_2_form_last10": team2_form10,
-        "team_2_momentum": team2_momentum,
-        "team_1_venue_win_rate": team1_venue_wr,
-        "team_2_venue_win_rate": team2_venue_wr,
-        "form_diff": form_diff,
+        "h2h_advantage": h2h_advantage,
+        "form_last5_diff": form_last5_diff,
+        "form_last10_diff": form_last10_diff,
         "momentum_diff": momentum_diff,
+        "venue_win_rate_diff": venue_win_rate_diff,
     }])
     
     try:

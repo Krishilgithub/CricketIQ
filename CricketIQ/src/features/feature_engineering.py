@@ -183,9 +183,12 @@ def build_advanced_features(duckdb_path: str, output_parquet: str) -> pd.DataFra
     df["toss_bat"] = (df["toss_decision"] == "bat").astype(int)
     # Phase 22: Removed toss_winner_is_team_1 (always 1, useless)
     
-    # Phase 22: Add relative strength features
-    df["form_diff"] = df["team_1_form_last5"] - df["team_2_form_last5"]
+    # Phase 22: Add relative strength features (strict symmetry)
+    df["h2h_advantage"] = df["team_1_h2h_win_rate"] - 0.5
+    df["form_last5_diff"] = df["team_1_form_last5"] - df["team_2_form_last5"]
+    df["form_last10_diff"] = df["team_1_form_last10"] - df["team_2_form_last10"]
     df["momentum_diff"] = df["team_1_momentum"] - df["team_2_momentum"]
+    df["venue_win_rate_diff"] = df["team_1_venue_win_rate"] - df["team_2_venue_win_rate"]
     
     con.close()
     
@@ -194,11 +197,9 @@ def build_advanced_features(duckdb_path: str, output_parquet: str) -> pd.DataFra
         "match_id", "match_date", "venue", "team_1", "team_2", 
         "toss_bat",
         "venue_avg_1st_inns_runs", "venue_chase_success_rate",
-        "team_1_h2h_win_rate", 
-        "team_1_form_last5", "team_1_form_last10", "team_1_momentum",
-        "team_2_form_last5", "team_2_form_last10", "team_2_momentum",
-        "team_1_venue_win_rate", "team_2_venue_win_rate",
-        "form_diff", "momentum_diff",
+        "h2h_advantage", 
+        "form_last5_diff", "form_last10_diff", "momentum_diff",
+        "venue_win_rate_diff",
         "team_1_win"
     ]
     

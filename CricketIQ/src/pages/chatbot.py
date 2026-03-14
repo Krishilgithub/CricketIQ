@@ -1,5 +1,5 @@
 """AI Analyst chatbot page — Text-to-SQL with context memory and SQL sandbox."""
-import re, json
+import re, json, uuid
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -30,7 +30,7 @@ def process_chat(user_input: str, history: list, st_placeholder) -> str:
         if not teamA or not teamB:
             found_team = teamA or teamB
             if found_team:
-                return f"I detected you want a match prediction involving **{found_team}**, but I need **two valid international cricket teams** to run the XGBoost model. Could you please specify who they are playing against?"
+                return f"I detected you want a match prediction involving **{found_team}**, but I need **two valid international cricket teams** to run the prediction model. Could you please specify who they are playing against?"
             else:
                 return "I detected you want a match prediction, but I couldn't identify the teams. Could you please specify the two teams that are playing?"
             
@@ -51,7 +51,8 @@ def process_chat(user_input: str, history: list, st_placeholder) -> str:
             with st_placeholder.container():
                 render_prediction_result(pred)
                 
-            return f"I've run the numbers for {teamA} vs {teamB}. Based on the XGBoost model, {pred['favourite']} is favored to win with a {pred['fav_prob']:.1f}% probability."
+            model_name = pred.get("model_loaded", "champion model")
+            return f"I've run the numbers for {teamA} vs {teamB}. Based on the {model_name}, {pred['favourite']} is favored to win with a {pred['fav_prob']:.1f}% probability."
             
         except Exception as e:
             return f"⚠️ Prediction Error: {e}"
@@ -109,7 +110,21 @@ def _try_auto_chart(reply: str, msgs: list):
 
 
 def render():
-    st.title("🤖 AI Analyst")
+    col_title, col_btn = st.columns([0.85, 0.15])
+    with col_title:
+        st.title("🤖 AI Analyst")
+    with col_btn:
+        st.write("") # Vertical padding alignment
+        if st.button("➕ New Chat", use_container_width=True, type="primary"):
+            new_id = str(uuid.uuid4())
+            st.session_state["current_session_id"] = new_id
+            st.session_state["sessions"][new_id] = {
+                "title": "New Chat",
+                "timestamp": pd.Timestamp.now(),
+                "messages": [],
+            }
+            st.rerun()
+
     st.markdown("Ask anything about T20 cricket. I'll write SQL, query the database, and return an expert analysis.")
 
     hub_con = get_hub_con()

@@ -52,10 +52,11 @@ INSTRUCTIONS:
 7. ONLY after executing a SQL query and receiving an EMPTY result, you may respond with: "I don't have enough data in the current CricketIQ database to answer that accurately." NEVER say this without trying a query first.
 8. IMPORTANT SCHEMA NOTE: `fact_matches` DOES NOT have a `team_2` column. It only has `team_1` (which is the toss winner) and `winner`. To find matches between two specific teams (e.g., India vs Pakistan), JOIN `fact_matches` with `fact_innings` (which has `batting_team`) on `match_id` to reliably find both playing teams.
 9. COMPLEX QUERIES: For questions involving specific match phases (e.g., powerplay = overs 1-6, middle overs = 7-15, death overs = 16-20), player comparisons, or head-to-head stats, use `fact_deliveries` which has `over_number`, `batter`, `runs_batter`, `batting_team`, etc. JOIN with `fact_matches` or `fact_innings` as needed to filter by opponent, venue, or date. ALWAYS attempt the query.
-10. SECURITY: Never generate DROP, DELETE, INSERT, or UPDATE queries. ONLY read-only SELECT queries are allowed.
-11. EDGE CASES: If a user asks about a player who did not play T20 Internationals (e.g., Don Bradman), politely clarify this database strictly tracks modern T20I matches.
-12. AUTO-SUGGESTIONS: At the very end of your final response, ALWAYS provide exactly 3 highly relevant follow-up questions under a "### 🤔 Suggested Follow-ups" heading as bullet points.
-13. Add emojis for key stats to improve readability 🏏"""
+10. IMPLICIT METADATA & RANKINGS: If a user asks for data involving metadata not explicitly in the database (like 'top-5 ranked teams', 'SENA countries', or 'spinners'), DO NOT refuse to answer. Use your world-class cricket knowledge to map these concepts to a hardcoded list in your SQL query (e.g., `WHERE team_1 IN ('India', 'Australia', 'England', 'Pakistan', 'South Africa')` for top-5 teams, or listing known spinners). Approximate intelligently instead of failing.
+11. SECURITY: Never generate DROP, DELETE, INSERT, or UPDATE queries. ONLY read-only SELECT queries are allowed.
+12. EDGE CASES: If a user asks about a player who did not play T20 Internationals (e.g., Don Bradman), politely clarify this database strictly tracks modern T20I matches.
+13. AUTO-SUGGESTIONS: At the very end of your final response, ALWAYS provide exactly 3 highly relevant follow-up questions under a "### 🤔 Suggested Follow-ups" heading as bullet points.
+14. Add emojis for key stats to improve readability 🏏"""
 
 @traceable(run_type="chain", name="Build System Prompt")
 def build_agent_system_prompt(entities: dict) -> str:

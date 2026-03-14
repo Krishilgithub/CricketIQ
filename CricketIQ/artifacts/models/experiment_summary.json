@@ -1,60 +1,54 @@
 {
-  "run_timestamp": "20260315_015438",
+  "run_timestamp": "20260315_021908",
   "champion_model": "LogisticRegression",
-  "champion_cv_log_loss": 0.634974,
-  "champion_cv_roc_auc": 0.68807,
-  "champion_cv_f1": 0.64132,
-  "feature_count": 14,
+  "champion_cv_log_loss": 0.634434,
+  "champion_cv_roc_auc": 0.689492,
+  "champion_cv_f1": 0.634514,
+  "feature_count": 8,
   "numerical_features": [
     "toss_bat",
     "venue_avg_1st_inns_runs",
     "venue_chase_success_rate",
-    "team_1_h2h_win_rate",
-    "team_1_form_last5",
-    "team_1_form_last10",
-    "team_1_momentum",
-    "team_2_form_last5",
-    "team_2_form_last10",
-    "team_2_momentum",
-    "team_1_venue_win_rate",
-    "team_2_venue_win_rate",
-    "form_diff",
-    "momentum_diff"
+    "h2h_advantage",
+    "form_last5_diff",
+    "form_last10_diff",
+    "momentum_diff",
+    "venue_win_rate_diff"
   ],
   "categorical_features": [],
   "training_dataset": "C:\\Users\\Krishil Agrawal\\Desktop\\Hackathons\\KenexAI\\CricketIQ\\artifacts\\training_dataset.parquet",
   "all_model_results": {
     "LogisticRegression": {
-      "cv_log_loss": 0.634974,
-      "cv_roc_auc": 0.68807,
-      "cv_accuracy": 0.6391479999999999,
-      "cv_f1": 0.64132,
-      "cv_precision": 0.6340600000000001,
-      "cv_recall": 0.651304
+      "cv_log_loss": 0.634434,
+      "cv_roc_auc": 0.689492,
+      "cv_accuracy": 0.635272,
+      "cv_f1": 0.634514,
+      "cv_precision": 0.63208,
+      "cv_recall": 0.639124
     },
     "RandomForest": {
-      "cv_log_loss": 0.6420459999999999,
-      "cv_roc_auc": 0.677776,
-      "cv_accuracy": 0.63876,
-      "cv_f1": 0.6406620000000001,
-      "cv_precision": 0.636124,
-      "cv_recall": 0.6478059999999999
+      "cv_log_loss": 0.6453340000000001,
+      "cv_roc_auc": 0.666814,
+      "cv_accuracy": 0.6186039999999999,
+      "cv_f1": 0.614838,
+      "cv_precision": 0.621244,
+      "cv_recall": 0.61171
     },
     "XGBoost": {
-      "cv_log_loss": 0.658052,
-      "cv_roc_auc": 0.66235,
-      "cv_accuracy": 0.612404,
-      "cv_f1": 0.612306,
-      "cv_precision": 0.613482,
-      "cv_recall": 0.613602
+      "cv_log_loss": 0.673522,
+      "cv_roc_auc": 0.631608,
+      "cv_accuracy": 0.580622,
+      "cv_f1": 0.5728899999999999,
+      "cv_precision": 0.581866,
+      "cv_recall": 0.566276
     },
     "LightGBM": {
-      "cv_log_loss": 0.691054,
-      "cv_roc_auc": 0.647742,
-      "cv_accuracy": 0.6023259999999999,
-      "cv_f1": 0.598716,
-      "cv_precision": 0.60324,
-      "cv_recall": 0.5955079999999999
+      "cv_log_loss": 0.7030299999999999,
+      "cv_roc_auc": 0.62446,
+      "cv_accuracy": 0.582558,
+      "cv_f1": 0.5779439999999999,
+      "cv_precision": 0.5820359999999999,
+      "cv_recall": 0.57474
     }
   }
 }
