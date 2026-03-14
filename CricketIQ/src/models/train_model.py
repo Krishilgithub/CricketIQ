@@ -174,7 +174,8 @@ def train_and_select(parquet_path: str, models_dir: str) -> str:
                     "brier_score_mean": metrics["brier_score_mean"],
                     "brier_score_std": metrics["brier_score_std"],
                 })
-                mlflow.sklearn.log_model(model, artifact_path=name)
+                # Note: model artifact stored in pickle, not MLflow registry
+                # to avoid MLflow 3.x meta.yaml compatibility issues
 
     # Select champion: lowest log-loss mean
     champion_name = min(results, key=lambda n: results[n]["metrics"]["log_loss_mean"])
