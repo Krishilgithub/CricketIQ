@@ -24,6 +24,14 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# Hide Streamlit's default multipage nav (auto-discovered .py files in /pages)
+hide_pages_css = """
+<style>
+[data-testid="stSidebarNav"] { display: none !important; }
+</style>
+"""
+st.markdown(hide_pages_css, unsafe_allow_html=True)
+
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # ── Session State Initialization ───────────────────────────────────────────
@@ -41,10 +49,9 @@ if "pending_query" not in st.session_state:
     st.session_state["pending_query"] = ""
 
 # ── Sidebar Navigation ─────────────────────────────────────────────────────
-st.sidebar.image(
-    "https://upload.wikimedia.org/wikipedia/en/thumb/5/5c/ICC_Cricket_World_Cup_Logo.svg/512px-ICC_Cricket_World_Cup_Logo.svg.png",
-    width=100,
-    use_container_width=False,
+st.sidebar.markdown(
+    "<div style='text-align:center; font-size:4rem; margin-bottom:-10px;'>🏏</div>",
+    unsafe_allow_html=True,
 )
 st.sidebar.markdown("## 🏏 CricketIQ")
 st.sidebar.markdown("*T20 Analytics Platform*")

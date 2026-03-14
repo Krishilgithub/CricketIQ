@@ -13,8 +13,9 @@ def get_hub_con():
     return duckdb.connect(str(resolve_path(cfg["paths"]["duckdb_path"])), read_only=True)
 
 
-@st.cache_resource
+@st.cache_resource(ttl=60)
 def load_model():
+    """Load champion model. TTL=60s ensures new model is picked up after retraining."""
     cfg = get_config()
     db_path = str(resolve_path(cfg["paths"]["models_dir"])) + "/champion_model.pkl"
     if os.path.exists(db_path):
@@ -54,16 +55,34 @@ def get_global_kpis():
 
 
 @st.cache_data
-def get_h2h_rate(team1):
+def get_h2h_rate(team1, team2=None):
+    """Phase 22 FIX: Pairwise H2H win rate of team1 vs team2."""
     con = get_hub_con()
-    q = f"""
-    SELECT COUNT(*) as total,
-           SUM(CASE WHEN winner = '{team1}' THEN 1 ELSE 0 END) as wins
-    FROM main_gold.fact_matches
-    WHERE (toss_winner = '{team1}' OR winner = '{team1}')
-    """
+    if team2:
+        # Pairwise H2H: find matches where both teams played
+        q = f"""
+        WITH matchup AS (
+            SELECT m.match_id, m.winner
+            FROM main_gold.fact_matches m
+            JOIN main_gold.fact_innings i1 ON m.match_id = i1.match_id AND i1.batting_team = '{team1}'
+            JOIN main_gold.fact_innings i2 ON m.match_id = i2.match_id AND i2.batting_team = '{team2}'
+            WHERE m.result_type NOT IN ('no result', 'tie')
+        )
+        SELECT COUNT(*) as total,
+               SUM(CASE WHEN winner = '{team1}' THEN 1 ELSE 0 END) as wins
+        FROM matchup
+        """
+    else:
+        q = f"""
+        SELECT COUNT(*) as total,
+               SUM(CASE WHEN winner = '{team1}' THEN 1 ELSE 0 END) as wins
+        FROM main_gold.fact_matches
+        WHERE result_type NOT IN ('no result', 'tie')
+          AND (toss_winner = '{team1}' OR winner = '{team1}')
+        """
     row = con.execute(q).df().iloc[0]
-    return float(row["wins"]) / max(float(row["total"]), 1)
+    total = max(float(row["total"]), 1)
+    return float(row["wins"]) / total
 
 
 @st.cache_data
@@ -80,18 +99,87 @@ def get_venue_avg(venue):
 
 
 @st.cache_data
-def get_team_form(team1):
+def get_venue_chase_rate(venue):
+    """Phase 22: Chase success rate at venue."""
     con = get_hub_con()
     q = f"""
-    SELECT ROUND(AVG(team_1_win)::FLOAT, 3) as form
-    FROM (
-        SELECT team_1_win FROM main_gold.fact_matches
-        WHERE toss_winner = '{team1}'
-        ORDER BY match_date DESC LIMIT 5
-    )
+    SELECT COUNT(*) as total,
+           SUM(CASE 
+               WHEN (toss_decision = 'bat' AND team_1_win = 0) OR (toss_decision = 'field' AND team_1_win = 1)
+               THEN 1 ELSE 0 END) as chase_wins
+    FROM main_gold.fact_matches
+    WHERE venue = '{venue}' AND result_type NOT IN ('no result', 'tie')
     """
     row = con.execute(q).df().iloc[0]
-    return float(row["form"] or 0.5)
+    total = max(float(row["total"]), 1)
+    return float(row["chase_wins"]) / total
+
+
+@st.cache_data
+def get_team_form(team, window=5):
+    """Phase 22 FIX: Independent team form — queries ALL matches the team played."""
+    con = get_hub_con()
+    q = f"""
+    WITH team_matches AS (
+        SELECT m.match_id, m.match_date, m.winner
+        FROM main_gold.fact_matches m
+        JOIN main_gold.fact_innings i ON m.match_id = i.match_id AND i.batting_team = '{team}'
+        WHERE m.result_type NOT IN ('no result', 'tie')
+        GROUP BY m.match_id, m.match_date, m.winner
+        ORDER BY m.match_date DESC
+        LIMIT {window}
+    )
+    SELECT ROUND(AVG(CASE WHEN winner = '{team}' THEN 1.0 ELSE 0.0 END)::FLOAT, 3) as form
+    FROM team_matches
+    """
+    row = con.execute(q).df().iloc[0]
+    return float(row["form"] if row["form"] is not None else 0.5)
+
+
+@st.cache_data
+def get_team_momentum(team):
+    """Phase 22: Weighted momentum index (recent 5 matches)."""
+    con = get_hub_con()
+    q = f"""
+    WITH team_matches AS (
+        SELECT m.match_id, m.match_date,
+               CASE WHEN m.winner = '{team}' THEN 1.0 ELSE 0.0 END as won
+        FROM main_gold.fact_matches m
+        JOIN main_gold.fact_innings i ON m.match_id = i.match_id AND i.batting_team = '{team}'
+        WHERE m.result_type NOT IN ('no result', 'tie')
+        GROUP BY m.match_id, m.match_date, m.winner
+        ORDER BY m.match_date DESC
+        LIMIT 5
+    )
+    SELECT won FROM team_matches ORDER BY match_date ASC
+    """
+    df = con.execute(q).df()
+    if df.empty:
+        return 0.5
+    wins = df["won"].values
+    weights = list(range(1, len(wins) + 1))
+    return float(sum(w * v for w, v in zip(weights, wins)) / sum(weights))
+
+
+@st.cache_data
+def get_team_venue_win_rate(team, venue):
+    """Phase 22: Team's win rate at specific venue."""
+    con = get_hub_con()
+    q = f"""
+    WITH team_venue AS (
+        SELECT m.match_id, m.winner
+        FROM main_gold.fact_matches m
+        JOIN main_gold.fact_innings i ON m.match_id = i.match_id AND i.batting_team = '{team}'
+        WHERE m.venue = '{venue}' AND m.result_type NOT IN ('no result', 'tie')
+        GROUP BY m.match_id, m.winner
+    )
+    SELECT COUNT(*) as total,
+           SUM(CASE WHEN winner = '{team}' THEN 1 ELSE 0 END) as wins
+    FROM team_venue
+    """
+    row = con.execute(q).df().iloc[0]
+    total = max(float(row["total"]), 1)
+    return float(row["wins"]) / total
 
 
 @st.cache_data
