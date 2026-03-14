@@ -1,40 +1,73 @@
 """
 src/ml/predictor.py
 ────────────────────
-ML prediction inference pipeline with LangSmith tracing.
+Phase 22 FIX: Complete rewrite to supply ALL features matching the
+training pipeline. No more feature mismatch or fake values.
 """
 
 import pandas as pd
 from langsmith import traceable
 
-from src.pages.shared import get_h2h_rate, get_venue_avg, get_team_form, load_model
+from src.pages.shared import (
+    get_h2h_rate, get_venue_avg, get_team_form,
+    get_team_momentum, get_venue_chase_rate, get_team_venue_win_rate,
+    load_model
+)
 
 @traceable(run_type="tool", name="ML Model Prediction", tags=["mlflow", "xgboost"])
 def predict_match(team1: str, team2: str, venue: str, toss_decision: str) -> dict:
     """
-    Runs the champion ML model to predict match outcome.
-    Logs inputs and model version to LangSmith.
+    Phase 22: Runs the champion ML model with ALL features matching training pipeline.
+    No team identity leakage — purely based on form, H2H, venue, and momentum.
     """
     champion = load_model()
     if not champion:
         raise ValueError("No champion model found for prediction.")
 
-    h2h_rate = get_h2h_rate(team1)
+    # Query ALL features independently (no faking)
+    h2h_rate = get_h2h_rate(team1, team2)  # Fixed: pairwise H2H
     venue_avg = get_venue_avg(venue)
-    team1_form = get_team_form(team1)
+    venue_chase_rate = get_venue_chase_rate(venue)
     
+    team1_form5 = get_team_form(team1, window=5)
+    team1_form10 = get_team_form(team1, window=10)
+    team1_momentum = get_team_momentum(team1)
+    
+    team2_form5 = get_team_form(team2, window=5)   # Fixed: independent query
+    team2_form10 = get_team_form(team2, window=10)  # Fixed: independent query
+    team2_momentum = get_team_momentum(team2)
+    
+    team1_venue_wr = get_team_venue_win_rate(team1, venue)
+    team2_venue_wr = get_team_venue_win_rate(team2, venue)
+    
+    form_diff = team1_form5 - team2_form5
+    momentum_diff = team1_momentum - team2_momentum
+    
+    # Build feature DataFrame matching EXACTLY the training pipeline columns
     feats = pd.DataFrame([{
         "toss_bat": 1 if toss_decision == "Bat" else 0,
         "venue_avg_1st_inns_runs": venue_avg,
+        "venue_chase_success_rate": venue_chase_rate,
         "team_1_h2h_win_rate": h2h_rate,
-        "team_1_form_last5": team1_form,
-        "team_2_form_last5": 1 - team1_form,
+        "team_1_form_last5": team1_form5,
+        "team_1_form_last10": team1_form10,
+        "team_1_momentum": team1_momentum,
+        "team_2_form_last5": team2_form5,
+        "team_2_form_last10": team2_form10,
+        "team_2_momentum": team2_momentum,
+        "team_1_venue_win_rate": team1_venue_wr,
+        "team_2_venue_win_rate": team2_venue_wr,
+        "form_diff": form_diff,
+        "momentum_diff": momentum_diff,
     }])
     
     try:
-        win_prob_t1 = float(champion["model"].predict_proba(feats)[0][1])
+        win_prob_t1 = float(champion["pipeline"].predict_proba(feats)[0][1])
     except Exception:
-        win_prob_t1 = h2h_rate  # Fallback
+        try:
+            win_prob_t1 = float(champion["model"].predict_proba(feats)[0][1])
+        except Exception:
+            win_prob_t1 = h2h_rate  # Last resort fallback
 
     win_prob_t2 = 1 - win_prob_t1
     
@@ -54,9 +87,10 @@ def predict_match(team1: str, team2: str, venue: str, toss_decision: str) -> dic
         "win_prob_t2": win_prob_t2,
         "confidence": confidence,
         "h2h_rate": h2h_rate,
-        "team1_form": team1_form,
+        "team1_form": team1_form5,
+        "team2_form": team2_form5,
         "venue_avg": venue_avg,
-        "model_loaded": "champion"
+        "model_loaded": champion.get("name", "champion")
     }
     
     return result

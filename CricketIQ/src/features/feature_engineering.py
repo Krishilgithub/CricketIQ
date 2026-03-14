@@ -181,19 +181,24 @@ def build_advanced_features(duckdb_path: str, output_parquet: str) -> pd.DataFra
     
     # Toss context
     df["toss_bat"] = (df["toss_decision"] == "bat").astype(int)
-    df["toss_winner_is_team_1"] = (df["toss_winner"] == df["team_1"]).astype(int)
+    # Phase 22: Removed toss_winner_is_team_1 (always 1, useless)
+    
+    # Phase 22: Add relative strength features
+    df["form_diff"] = df["team_1_form_last5"] - df["team_2_form_last5"]
+    df["momentum_diff"] = df["team_1_momentum"] - df["team_2_momentum"]
     
     con.close()
     
     # Clean up and select features
     feature_cols = [
         "match_id", "match_date", "venue", "team_1", "team_2", 
-        "toss_bat", "toss_winner_is_team_1",
+        "toss_bat",
         "venue_avg_1st_inns_runs", "venue_chase_success_rate",
         "team_1_h2h_win_rate", 
         "team_1_form_last5", "team_1_form_last10", "team_1_momentum",
         "team_2_form_last5", "team_2_form_last10", "team_2_momentum",
         "team_1_venue_win_rate", "team_2_venue_win_rate",
+        "form_diff", "momentum_diff",
         "team_1_win"
     ]
     

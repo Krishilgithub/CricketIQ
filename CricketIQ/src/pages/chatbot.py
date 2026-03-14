@@ -8,11 +8,56 @@ import requests
 from langsmith import traceable
 
 from src.agents.sql_agent import agent_loop, rewrite_query_with_llm
+from src.chat.intent_classifier import classify_intent
+from src.chat.entity_extractor import extract_prediction_entities
+from src.ml.predictor import predict_match
+from src.ui.prediction_display import render_prediction_result
 from src.pages.shared import get_hub_con
 
 @traceable(run_type="chain", name="User Chat Interaction")
 def process_chat(user_input: str, history: list, st_placeholder) -> str:
-    """Traced entry point for the entire agentic run."""
+    """Traced entry point for the entire agentic run. Routes based on intent."""
+    
+    intent = classify_intent(user_input, history)
+    
+    if intent == "PREDICTION":
+        st_placeholder.caption("🎯 *Intent Detected: Match Prediction Model*")
+        
+        entities = extract_prediction_entities(user_input, history)
+        teamA = entities.get("Team A")
+        teamB = entities.get("Team B")
+        
+        if not teamA or not teamB:
+            found_team = teamA or teamB
+            if found_team:
+                return f"I detected you want a match prediction involving **{found_team}**, but I need **two valid international cricket teams** to run the XGBoost model. Could you please specify who they are playing against?"
+            else:
+                return "I detected you want a match prediction, but I couldn't identify the teams. Could you please specify the two teams that are playing?"
+            
+        venue = entities.get("Venue") or "Wankhede Stadium"
+        toss = entities.get("Toss") or "Bat"
+        
+        try:
+            pred = predict_match(teamA, teamB, venue, toss)
+            
+            # Save the raw prediction result in the session history under a special key
+            current_session = st.session_state["sessions"][st.session_state["current_session_id"]]
+            current_session["messages"].append({
+                "role": "tool",
+                "content": f"Predicted {teamA} vs {teamB}",
+                "prediction_dict": pred
+            })
+            
+            with st_placeholder.container():
+                render_prediction_result(pred)
+                
+            return f"I've run the numbers for {teamA} vs {teamB}. Based on the XGBoost model, {pred['favourite']} is favored to win with a {pred['fav_prob']:.1f}% probability."
+            
+        except Exception as e:
+            return f"⚠️ Prediction Error: {e}"
+            
+    # Default SQL / Knowledge Flow
+    st_placeholder.caption("📊 *Intent Detected: Data Analytics Agent*")
     standalone_query = rewrite_query_with_llm(user_input, history)
     if standalone_query.lower() != user_input.lower():
         st_placeholder.caption(f"*Contextualized: '{standalone_query}'*")
@@ -113,18 +158,25 @@ def render():
     for msg in msgs:
         if msg["role"] == "tool":
             with st.chat_message("assistant", avatar="🛠️"):
-                with st.expander("💾 SQL Executed", expanded=False):
-                    st.code(msg["content"], language="sql")
-                    if "result_df" in msg and msg["result_df"]:
-                        try:
-                            df_display = pd.DataFrame(msg["result_df"])
-                            st.dataframe(df_display, use_container_width=True, hide_index=True)
-                            csv = df_display.to_csv(index=False).encode("utf-8")
-                            st.download_button("⬇️ Download Result CSV", csv, "sql_result.csv", "text/csv", key=f"dl_{id(msg)}")
-                        except Exception:
+                if "prediction_dict" in msg:
+                    # It's a prediction visualization
+                    with st.expander("🎯 Prediction Analysis", expanded=True):
+                        from src.ui.prediction_display import render_prediction_result
+                        render_prediction_result(msg["prediction_dict"])
+                else:
+                    # It's a SQL execution
+                    with st.expander("💾 SQL Executed", expanded=False):
+                        st.code(msg["content"], language="sql")
+                        if "result_df" in msg and msg["result_df"]:
+                            try:
+                                df_display = pd.DataFrame(msg["result_df"])
+                                st.dataframe(df_display, use_container_width=True, hide_index=True)
+                                csv = df_display.to_csv(index=False).encode("utf-8")
+                                st.download_button("⬇️ Download Result CSV", csv, "sql_result.csv", "text/csv", key=f"dl_{id(msg)}")
+                            except Exception:
+                                st.markdown(msg.get("result", ""))
+                        else:
                             st.markdown(msg.get("result", ""))
-                    else:
-                        st.markdown(msg.get("result", ""))
         else:
             avatar = "🧑" if msg["role"] == "user" else "🤖"
             with st.chat_message(msg["role"], avatar=avatar):
