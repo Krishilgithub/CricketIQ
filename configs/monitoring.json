@@ -1,7 +1,0 @@
-{
-  "model_bundle": "artifacts/models/logistic_calibrated_v1.joblib",
-  "feature_file": "artifacts/features/match_level_features.csv",
-  "output_report": "artifacts/reports/monitoring_report.json",
-  "target_column": "team_1_win",
-  "binary_label_flag_column": "label_is_binary"
-}
