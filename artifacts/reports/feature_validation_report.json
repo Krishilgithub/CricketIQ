@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "feature_rows": 3203,
+  "feature_columns": 102,
+  "missing_required_columns": [],
+  "high_null_columns_gt_50pct": {},
+  "duplicate_match_rows": 0,
+  "quality_checks": {
+    "has_required_columns": true,
+    "binary_label_presence": true,
+    "target_presence": true,
+    "duplicate_match_rows_is_zero": true,
+    "quality_duplicate_delivery_keys_is_zero": true,
+    "quality_duplicate_wicket_keys_is_zero": true,
+    "quality_innings_delivery_mismatch_is_zero": true
+  }
+}

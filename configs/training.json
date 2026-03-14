@@ -1,0 +1,10 @@
+{
+  "feature_file": "artifacts/features/match_level_features.csv",
+  "output_dir": "artifacts/models",
+  "target_column": "team_1_win",
+  "binary_label_flag_column": "label_is_binary",
+  "date_column": "match_date",
+  "test_size": 0.2,
+  "random_state": 42,
+  "model_name": "logistic_calibrated_v1"
+}

@@ -1,0 +1,13 @@
+{
+  "rows_scored": 3093,
+  "metrics": {
+    "accuracy": 0.6760426770126091,
+    "roc_auc": 0.7405041252930644,
+    "log_loss": 0.6104701572628816,
+    "brier": 0.21094074822188763
+  },
+  "prediction_prob_mean": 0.5047723280713694,
+  "prediction_prob_std": 0.13909867166413506,
+  "probability_psi_ref_vs_recent": 0.04523428305782358,
+  "drift_flag": false
+}

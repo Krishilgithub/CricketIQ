@@ -1,0 +1,12 @@
+{
+  "matches_input": 3211,
+  "matches_modeled": 3203,
+  "team_form_windows": [
+    5,
+    10
+  ],
+  "match_level_feature_rows": 3203,
+  "match_team_feature_rows": 6406,
+  "live_state_feature_rows": 722512,
+  "output_dir": "C:\\Users\\Krishil Agrawal\\Desktop\\Hackathons\\KenexAI\\artifacts\\features"
+}
