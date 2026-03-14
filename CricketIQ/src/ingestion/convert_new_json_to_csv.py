@@ -256,6 +256,15 @@ def convert_json_file(json_path: Path) -> dict[str, list[dict]]:
     with open(json_path, "r", encoding="utf-8") as f:
         raw = json.load(f)
 
+    # Completely exclude Women's matches from the dataset
+    gender = _safe(raw, "info", "gender")
+    if gender and str(gender).lower() == "female":
+        return {
+            "matches": [], "match_teams": [], "innings": [], 
+            "deliveries": [], "wickets": [], "powerplays": [], 
+            "player_of_match": [], "officials": []
+        }
+
     match_id = json_path.stem  # e.g. "1234567" from "1234567.json"
     deliveries, wickets = _flatten_deliveries_wickets(match_id, raw)
 
