@@ -1,0 +1,63 @@
+{
+  "run_timestamp": "20260315_005621",
+  "champion_model": "LogisticRegression",
+  "champion_cv_log_loss": 0.640144,
+  "champion_cv_roc_auc": 0.6668740000000001,
+  "champion_cv_f1": 0.634584,
+  "feature_count": 16,
+  "numerical_features": [
+    "venue_avg_1st_inns_runs",
+    "venue_chase_success_rate",
+    "team_1_h2h_win_rate",
+    "team_1_form_last5",
+    "team_1_form_last10",
+    "team_1_momentum",
+    "team_2_form_last5",
+    "team_2_form_last10",
+    "team_2_momentum",
+    "team_1_venue_win_rate",
+    "team_2_venue_win_rate"
+  ],
+  "categorical_features": [
+    "toss_bat",
+    "toss_winner_is_team_1",
+    "venue",
+    "team_1",
+    "team_2"
+  ],
+  "training_dataset": "C:\\Users\\Krishil Agrawal\\Desktop\\Hackathons\\KenexAI\\CricketIQ\\artifacts\\training_dataset.parquet",
+  "all_model_results": {
+    "LogisticRegression": {
+      "cv_log_loss": 0.640144,
+      "cv_roc_auc": 0.6668740000000001,
+      "cv_accuracy": 0.623644,
+      "cv_f1": 0.634584,
+      "cv_precision": 0.6167,
+      "cv_recall": 0.654946
+    },
+    "RandomForest": {
+      "cv_log_loss": 0.6538660000000001,
+      "cv_roc_auc": 0.690276,
+      "cv_accuracy": 0.644184,
+      "cv_f1": 0.6495900000000001,
+      "cv_precision": 0.641094,
+      "cv_recall": 0.661854
+    },
+    "XGBoost": {
+      "cv_log_loss": 0.646666,
+      "cv_roc_auc": 0.676644,
+      "cv_accuracy": 0.62907,
+      "cv_f1": 0.6224959999999999,
+      "cv_precision": 0.6360399999999999,
+      "cv_recall": 0.6137680000000001
+    },
+    "LightGBM": {
+      "cv_log_loss": 0.6806180000000001,
+      "cv_roc_auc": 0.650872,
+      "cv_accuracy": 0.6050380000000001,
+      "cv_f1": 0.6055059999999999,
+      "cv_precision": 0.605918,
+      "cv_recall": 0.608098
+    }
+  }
+}

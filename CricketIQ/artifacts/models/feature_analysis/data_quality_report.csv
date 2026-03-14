@@ -1,0 +1,17 @@
+feature,missing_pct,n_unique,zero_variance,outlier_count_iqr,dtype
+venue_avg_1st_inns_runs,0.0,1712,False,165,float64
+venue_chase_success_rate,0.0,244,False,522,float64
+team_1_h2h_win_rate,0.0,179,False,0,float64
+team_1_form_last5,0.0,11,False,0,float64
+team_1_form_last10,0.0,33,False,0,float64
+team_1_momentum,0.0,17,False,0,float64
+team_2_form_last5,0.0,11,False,0,float64
+team_2_form_last10,0.0,32,False,0,float64
+team_2_momentum,0.0,17,False,0,float64
+team_1_venue_win_rate,0.0,129,False,0,float64
+team_2_venue_win_rate,0.0,129,False,0,float64
+toss_bat,0.0,2,False,0,int32
+toss_winner_is_team_1,0.0,1,True,0,int32
+venue,0.0,323,False,0,object
+team_1,0.0,106,False,0,object
+team_2,0.0,106,False,0,object

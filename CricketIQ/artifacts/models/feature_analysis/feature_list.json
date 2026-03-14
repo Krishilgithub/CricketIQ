@@ -1,0 +1,43 @@
+{
+  "numerical_features": [
+    "venue_avg_1st_inns_runs",
+    "venue_chase_success_rate",
+    "team_1_h2h_win_rate",
+    "team_1_form_last5",
+    "team_1_form_last10",
+    "team_1_momentum",
+    "team_2_form_last5",
+    "team_2_form_last10",
+    "team_2_momentum",
+    "team_1_venue_win_rate",
+    "team_2_venue_win_rate"
+  ],
+  "categorical_features": [
+    "toss_bat",
+    "toss_winner_is_team_1",
+    "venue",
+    "team_1",
+    "team_2"
+  ],
+  "all_features": [
+    "venue_avg_1st_inns_runs",
+    "venue_chase_success_rate",
+    "team_1_h2h_win_rate",
+    "team_1_form_last5",
+    "team_1_form_last10",
+    "team_1_momentum",
+    "team_2_form_last5",
+    "team_2_form_last10",
+    "team_2_momentum",
+    "team_1_venue_win_rate",
+    "team_2_venue_win_rate",
+    "toss_bat",
+    "toss_winner_is_team_1",
+    "venue",
+    "team_1",
+    "team_2"
+  ],
+  "n_total": 16,
+  "n_numerical": 11,
+  "n_categorical": 5
+}
