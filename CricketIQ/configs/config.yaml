@@ -1,0 +1,82 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  CricketIQ  —  Central Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Paths ────────────────────────────────────────────────────────────────────
+paths:
+  data_raw_cricsheet: "data/raw/cricsheet_csv_all"
+  data_raw_given:     "data/raw/given_data_csv"
+  data_processed:     "data/processed/cricsheet_csv_men"
+  duckdb_path:        "artifacts/cricketiq.duckdb"
+  models_dir:         "artifacts/models"
+  reports_dir:        "artifacts/reports"
+  training_dataset:   "artifacts/training_dataset.parquet"
+
+# ── Filter Scope ─────────────────────────────────────────────────────────────
+data_filters:
+  match_type:   "T20"
+  gender:       "male"
+  team_type:    "international"
+  overs_filter: 20                 # exclude non-standard shortened matches
+
+# ── Feature Engineering Windows ──────────────────────────────────────────────
+features:
+  rolling_windows: [5, 10]         # last-N match windows for team form
+  phase_definitions:
+    powerplay:
+      from_over: 0
+      to_over:   5
+    middle:
+      from_over: 6
+      to_over:   14
+    death:
+      from_over: 15
+      to_over:   19
+
+# ── Model Training ───────────────────────────────────────────────────────────
+training:
+  target_column:      "team_1_win"
+  test_size:          0.2          # time-based split (last 20% of sorted dates)
+  random_state:       42
+  calibration_method: "isotonic"
+  promotion_thresholds:
+    log_loss_improvement_pct: 2.0
+    brier_no_regression:      true
+    calibration_error_max:    0.05
+
+# ── MLflow ───────────────────────────────────────────────────────────────────
+mlflow:
+  tracking_uri:    "http://localhost:5050"
+  experiment_name: "cricketiq_match_prediction"
+  model_name:      "cricketiq_prematch_model"
+
+# ── FastAPI ───────────────────────────────────────────────────────────────────
+api:
+  host: "0.0.0.0"
+  port: 8000
+  reload: true
+
+# ── Dashboard ────────────────────────────────────────────────────────────────
+dashboard:
+  host: "0.0.0.0"
+  port: 8501
+  page_title: "CricketIQ Analytics"
+
+# ── Live Simulator ───────────────────────────────────────────────────────────
+simulator:
+  event_interval_seconds: 30      # time between ball-by-ball events
+  output_mode: "stream"           # "stream" | "batch"
+
+# ── Monitoring ───────────────────────────────────────────────────────────────
+monitoring:
+  retrain_trigger:
+    days_since_last_train: 7
+    new_matches_threshold: 50
+    drift_alert: true
+  freshness_sla_hours: 24
+
+# ── GenAI (optional) ─────────────────────────────────────────────────────────
+genai:
+  enabled: false
+  model:   "gpt-4o"
+  vector_store_path: "artifacts/vector_store"

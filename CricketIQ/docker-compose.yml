@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    container_name: cricketiq_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./.env:/app/.env
+    environment:
+      - PYTHONPATH=/app
+    restart: unless-stopped
+
+  dashboard_persona:
+    build:
+      context: .
+      dockerfile: docker/dash.Dockerfile
+    container_name: cricketiq_persona_dash
+    ports:
+      - "8502:8502"
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./.env:/app/.env
+    environment:
+      - PYTHONPATH=/app
+    command: ["streamlit", "run", "src/dashboards/persona_app.py", "--server.port", "8502", "--server.address", "0.0.0.0"]
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  dashboard_rag:
+    build:
+      context: .
+      dockerfile: docker/dash.Dockerfile
+    container_name: cricketiq_rag_dash
+    ports:
+      - "8503:8503"
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./.env:/app/.env
+    environment:
+      - PYTHONPATH=/app
+    command: ["streamlit", "run", "src/genai/chatbot_app.py", "--server.port", "8503", "--server.address", "0.0.0.0"]
+    restart: unless-stopped
+
+  dashboard_mlops:
+    build:
+      context: .
+      dockerfile: docker/dash.Dockerfile
+    container_name: cricketiq_mlops_dash
+    ports:
+      - "8504:8504"
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./.env:/app/.env
+    environment:
+      - PYTHONPATH=/app
+    command: ["streamlit", "run", "src/monitoring/mlops_dashboard.py", "--server.port", "8504", "--server.address", "0.0.0.0"]
+    restart: unless-stopped
+
+  mlflow:
+    build:
+      context: .
+      dockerfile: docker/mlflow.Dockerfile
+    container_name: cricketiq_mlflow
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./mlruns:/mlruns
+    restart: unless-stopped

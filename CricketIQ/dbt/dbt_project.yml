@@ -1,0 +1,35 @@
+name: cricketiq
+version: '1.0'
+config-version: 2
+
+profile: cricketiq_dev
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  cricketiq:
+    bronze:
+      +schema: bronze
+      +materialized: table
+    silver:
+      +schema: silver
+      +materialized: table
+    gold:
+      +schema: gold
+      +materialized: table
+      mart_team_form:
+        +materialized: incremental
+        +unique_key: "match_id || '_' || team"
+      mart_powerplay_death_metrics:
+        +materialized: incremental
+        +unique_key: "match_id || '_' || innings_number"

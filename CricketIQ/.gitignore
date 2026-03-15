@@ -1,0 +1,79 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environment
+.venv/
+venv/
+env/
+.dash_env
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# DuckDB database file (generated artifact)
+artifacts/*.duckdb
+
+# Large model files — tracked via MLflow/artifacts only
+artifacts/models/*.pkl
+artifacts/models/*.joblib
+artifacts/models/*.cbm
+
+# Training dataset parquet (generated)
+artifacts/training_dataset.parquet
+
+# Reports (generated)
+artifacts/reports/
+
+# MLflow runs (local)
+mlruns/
+
+# Pre-commit cache
+.pre-commit-cache/
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# mypy
+.mypy_cache/
+
+# ruff
+.ruff_cache/
+
+# Jupyter
+*.ipynb_checkpoints/
+.ipynb_checkpoints/
+
+# dbt
+dbt/target/
+dbt/logs/
+dbt/.dbt/
+
+# Great Expectations
+great_expectations/.ge_store_backend_id
+great_expectations/uncommitted/
+
+# Docker
+docker/.docker/
+
+# Prefect
+.prefect/
+
+# Build
+dist/
+build/
+*.egg-info/

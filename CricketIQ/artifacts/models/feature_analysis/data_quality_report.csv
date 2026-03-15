@@ -1,0 +1,9 @@
+feature,missing_pct,n_unique,zero_variance,outlier_count_iqr,dtype
+toss_bat,0.0,2,False,0,int32
+venue_avg_1st_inns_runs,0.0,1718,False,154,float64
+venue_chase_success_rate,0.0,244,False,522,float64
+h2h_advantage,0.0,179,False,0,float64
+form_last5_diff,0.0,64,False,82,float64
+form_last10_diff,0.0,229,False,42,float64
+momentum_diff,0.0,97,False,0,float64
+venue_win_rate_diff,0.0,451,False,0,float64
