@@ -1,17 +1,14 @@
-"""Intelligence Hub dashboard page — KPI overview + 4 persona tabs."""
+"""Intelligence Hub dashboard page — KPI overview + 3 persona tabs."""
 import streamlit as st
 import plotly.express as px
-import plotly.graph_objects as go
 
 from src.pages.shared import (
-    get_global_kpis, get_teams, get_venues,
+    get_global_kpis, get_venues,
     get_phase_data, get_toss_recommendation,
     get_top_batters, get_top_bowlers, get_venue_heatmap,
     get_exciting_matches, get_highest_scores, get_best_bowling,
-    get_h2h_rate, get_venue_avg, get_team_form,
-    get_hub_con, load_model,
+    get_hub_con,
 )
-import pandas as pd
 
 
 def render():
@@ -29,64 +26,11 @@ def render():
     g4.metric("👤 Players Tracked", f"{int(kpis['total_players']):,}")
     st.markdown("---")
 
-    tab1, tab2, tab3, tab4 = st.tabs(["🎯 Match Analyst", "👨‍💼 Coach View", "📊 Management", "📺 Fan / Media"])
-    teams_list = get_teams()
+    tab1, tab2, tab3 = st.tabs(["👨‍💼 Coach View", "📊 Management", "📺 Fan / Media"])
     venues_list = get_venues()
-    champion = load_model()
 
-    # ── Tab 1: Match Analyst ─────────────────────────────────────────────
+    # ── Tab 1: Coach View ────────────────────────────────────────────────
     with tab1:
-        st.markdown("<div class='section-header'>Pre-Match Win Predictor</div>", unsafe_allow_html=True)
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            team1 = st.selectbox("Team 1 (Toss Winner)", teams_list,
-                                 index=teams_list.index("India") if "India" in teams_list else 0, key="hub_team1")
-        with c2:
-            team2 = st.selectbox("Team 2", [t for t in teams_list if t != team1], key="hub_team2")
-        with c3:
-            venue = st.selectbox("Match Venue", venues_list, key="hub_venue")
-
-        toss_decision = st.radio("Toss Decision", ["Bat", "Field"], horizontal=True, key="hub_toss")
-
-        if st.button("🔮 Predict Match", type="primary", key="hub_predict"):
-            h2h_rate = get_h2h_rate(team1)
-            venue_avg = get_venue_avg(venue)
-            team1_form = get_team_form(team1)
-
-            win_prob = None
-            if champion:
-                feats = pd.DataFrame([{
-                    "toss_bat": 1 if toss_decision == "Bat" else 0,
-                    "venue_avg_1st_inns_runs": venue_avg,
-                    "team_1_h2h_win_rate": h2h_rate,
-                    "team_1_form_last5": team1_form,
-                    "team_2_form_last5": 1 - team1_form,
-                }])
-                try:
-                    win_prob = float(champion["model"].predict_proba(feats)[0][1])
-                except Exception:
-                    win_prob = None
-
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Win Probability", f"{win_prob*100:.1f}%" if win_prob else "N/A",
-                      delta=f"{(win_prob-0.5)*100:+.1f}% vs 50/50" if win_prob else None)
-            m2.metric("Venue Avg 1st Innings", f"{venue_avg:.0f} runs")
-            m3.metric("H2H Win Rate", f"{h2h_rate*100:.1f}%")
-            m4.metric("Last 5-Match Form", f"{team1_form*100:.1f}%")
-
-            if win_prob:
-                fig = go.Figure(go.Bar(
-                    x=[team1, team2],
-                    y=[win_prob * 100, (1 - win_prob) * 100],
-                    marker_color=["#38bdf8", "#da3633"],
-                    text=[f"{win_prob*100:.1f}%", f"{(1-win_prob)*100:.1f}%"],
-                    textposition="auto"
-                ))
-                fig.update_layout(title="Win Probability %", template="plotly_dark", height=320)
-                st.plotly_chart(fig, use_container_width=True)
-
-    # ── Tab 2: Coach View ────────────────────────────────────────────────
-    with tab2:
         st.markdown("<div class='section-header'>Phase Run Rates & Risk Analysis</div>", unsafe_allow_html=True)
         v_sel = st.selectbox("Analyze Venue", venues_list, key="coach_v")
         phase_df = get_phase_data(v_sel)
@@ -112,8 +56,8 @@ def render():
                 "toss_decision": "Decision", "total": "Matches", "toss_wins": "Wins", "win_pct": "Win %"
             }), use_container_width=True, hide_index=True)
 
-    # ── Tab 3: Management ────────────────────────────────────────────────
-    with tab3:
+    # ── Tab 2: Management ────────────────────────────────────────────────
+    with tab2:
         st.markdown("<div class='section-header'>Talent & Form Analytics</div>", unsafe_allow_html=True)
         col_m1, col_m2 = st.columns(2)
 
@@ -147,8 +91,8 @@ def render():
                                  color_continuous_scale="RdYlGn", template="plotly_dark", aspect="auto")
                 st.plotly_chart(fig6, use_container_width=True)
 
-    # ── Tab 4: Fan / Media ───────────────────────────────────────────────
-    with tab4:
+    # ── Tab 3: Fan / Media ───────────────────────────────────────────────
+    with tab3:
         st.markdown("<div class='section-header'>Entertainment Analytics</div>", unsafe_allow_html=True)
 
         st.subheader("🔥 Most Exciting T20I Matches (Close Chases)")

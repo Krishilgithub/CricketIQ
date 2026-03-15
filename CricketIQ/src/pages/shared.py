@@ -314,17 +314,60 @@ def get_best_bowling():
 THEME_CSS = """
 <style>
     [data-testid="stSidebar"] { background-color: #0b0f19; }
-    .stApp { background-color: #0f172a; color: #f8fafc; }
-    .metric-card { background: #1e293b; border-radius: 12px; padding: 20px; margin: 8px 0; border: 1px solid #334155; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-    .section-header { font-size: 1.5rem; font-weight: 700; color: #38bdf8; margin-bottom: 16px; border-bottom: 2px solid #1e293b; padding-bottom: 8px; }
-    .chat-msg-user { background: #0284c7; border-radius: 12px 12px 0 12px; padding: 12px 16px; margin: 4px 0; color: white; float: right; clear: both; max-width: 80%; }
-    .chat-msg-bot { background: #1e293b; border-radius: 12px 12px 12px 0; padding: 12px 16px; margin: 4px 0; border: 1px solid #334155; color: #f8fafc; float: left; clear: both; max-width: 80%; }
+    .stApp { background-color: #0f172a; color: #f8fafc; font-size: 1.1rem; }
+    .metric-card { background: #1e293b; border-radius: 12px; padding: 20px; margin: 8px 0; border: 1px solid #334155; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); font-size: 1.1rem; }
+    .section-header { font-size: 1.75rem; font-weight: 700; color: #38bdf8; margin-bottom: 16px; border-bottom: 2px solid #1e293b; padding-bottom: 8px; }
+    .chat-msg-user { background: #0284c7; border-radius: 12px 12px 0 12px; padding: 12px 16px; margin: 4px 0; color: white; float: right; clear: both; max-width: 80%; font-size: 1.05rem; }
+    .chat-msg-bot { background: #1e293b; border-radius: 12px 12px 12px 0; padding: 12px 16px; margin: 4px 0; border: 1px solid #334155; color: #f8fafc; float: left; clear: both; max-width: 80%; font-size: 1.05rem; }
     .stTextInput > div > div > input { background: #1e293b; color: white; border: 1px solid #334155; border-radius: 8px; }
     .st-expander { background-color: #1e293b !important; border: 1px solid #334155 !important; border-radius: 8px !important; }
     .stCodeBlock { background-color: #0b0f19 !important; border-radius: 6px !important; border: 1px solid #334155 !important; }
     .kpi-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 16px; padding: 24px; border: 1px solid #334155; text-align: center; }
-    .kpi-value { font-size: 2rem; font-weight: 800; color: #38bdf8; }
-    .kpi-label { font-size: 0.85rem; color: #94a3b8; margin-top: 4px; }
+    .kpi-value { font-size: 2.25rem; font-weight: 800; color: #38bdf8; }
+    .kpi-label { font-size: 1rem; color: #94a3b8; margin-top: 4px; }
     .prediction-card { background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%); border-radius: 16px; padding: 24px; border: 1px solid #1d4ed8; }
+    [data-testid="stMetricValue"] { font-size: 1.3rem !important; }
+
+    /* ── Sidebar radio: hide dots, style as clean nav items ── */
+    [data-testid="stSidebar"] .stRadio > label { display: none; }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] { gap: 2px; }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #94a3b8;
+        padding: 10px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+        margin: 0;
+    }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label p {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+    }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
+        background: #1e293b;
+        color: #e2e8f0;
+    }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-checked="true"],
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:has(input:checked) {
+        background: #1e293b;
+        color: #38bdf8;
+        font-weight: 600;
+        border-left: 3px solid #38bdf8;
+    }
+    /* Hide the radio dot circle */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label > div:first-child {
+        display: none !important;
+    }
+    /* Remove default Streamlit radio dot/indicator */
+    [data-testid="stSidebar"] .stRadio [data-testid="stMarkdownContainer"] { pointer-events: none; }
+    [data-testid="stSidebar"] .stRadio input[type="radio"] { display: none !important; }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label > div[data-testid="stRadioOptionIndicator"],
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label span[data-testid="stRadioOptionIndicator"] {
+        display: none !important;
+    }
 </style>
 """
