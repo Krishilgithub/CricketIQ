@@ -27,7 +27,7 @@ def render():
     st.markdown("---")
 
     if not sessions:
-        st.info("No chat history available. Go to the **AI Analyst** page to start asking questions!")
+        st.info("No chat history available. Go to the **AI Chat Bot** page to start asking questions!")
         return
 
     sorted_sessions = sorted(
@@ -72,7 +72,7 @@ def render():
                 if not is_current:
                     if st.button("📥 Load Chat", key=f"load_{sess_id}"):
                         st.session_state["current_session_id"] = sess_id
-                        st.success("Chat loaded! Switch to **AI Analyst** to continue.")
+                        st.success("Chat loaded! Switch to **AI Chat Bot** to continue.")
                         st.rerun()
                 else:
                     st.success("✅ This is your active conversation.")

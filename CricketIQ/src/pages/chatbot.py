@@ -112,7 +112,7 @@ def _try_auto_chart(reply: str, msgs: list):
 def render():
     col_title, col_btn = st.columns([0.85, 0.15])
     with col_title:
-        st.title("🤖 AI Analyst")
+        st.title("🤖 AI Chat Bot")
     with col_btn:
         st.write("") # Vertical padding alignment
         if st.button("➕ New Chat", use_container_width=True, type="primary"):

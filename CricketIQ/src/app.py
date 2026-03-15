@@ -50,23 +50,32 @@ if "pending_query" not in st.session_state:
 
 # ── Sidebar Navigation ─────────────────────────────────────────────────────
 st.sidebar.markdown(
-    "<div style='text-align:center; font-size:4rem; margin-bottom:-10px;'>🏏</div>",
+    "<div style='text-align:center; font-size:3.5rem; margin-bottom:0;'>🏏</div>",
     unsafe_allow_html=True,
 )
-st.sidebar.markdown("## 🏏 CricketIQ")
-st.sidebar.markdown("*T20 Analytics Platform*")
+st.sidebar.markdown(
+    "<div style='text-align:center; font-size:1.4rem; font-weight:700; color:#38bdf8; letter-spacing:0.5px;'>CricketIQ</div>",
+    unsafe_allow_html=True,
+)
+st.sidebar.markdown(
+    "<div style='text-align:center; font-size:0.8rem; color:#64748b; margin-bottom:8px;'>T20 Analytics Platform</div>",
+    unsafe_allow_html=True,
+)
 st.sidebar.markdown("---")
 
-app_mode = st.sidebar.radio(
+NAV_ITEMS = {
+    "🤖  AI Chat Bot": "🤖 AI Chat Bot",
+    "🔮  Match Prediction": "🔮 Match Prediction",
+    "📊  Intelligence Hub": "📊 Intelligence Hub",
+    "📈  Advanced Analytics": "📈 Advanced Analytics",
+    "💬  Chat History": "💬 Chat History",
+}
+
+app_mode_label = st.sidebar.radio(
     "Navigate",
-    [
-        "🤖 AI Analyst",
-        "🔮 Match Prediction",
-        "📊 Intelligence Hub",
-        "📈 Advanced Analytics",
-        "💬 Chat History",
-    ],
+    list(NAV_ITEMS.keys()),
 )
+app_mode = NAV_ITEMS[app_mode_label]
 
 # Active session info in sidebar
 st.sidebar.markdown("---")
@@ -88,7 +97,7 @@ msg_count = len([m for m in active_session.get("messages", []) if m["role"] == "
 st.sidebar.caption(f"📝 {msg_count} question(s) in this session")
 
 # ── Page Routing ───────────────────────────────────────────────────────────
-if app_mode == "🤖 AI Analyst":
+if app_mode == "🤖 AI Chat Bot":
     from src.pages import chatbot
     chatbot.render()
 
