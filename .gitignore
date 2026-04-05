@@ -1,5 +1,0 @@
-data/t20s_json
-.venv
-data/cricsheet_csv/
-__pycache__/
-*.pyc

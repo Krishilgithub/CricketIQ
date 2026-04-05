@@ -1,0 +1,78 @@
+{
+  "meta": {
+    "data_version": "1.1.0",
+    "created": "2026-03-15",
+    "revision": 1
+  },
+  "info": {
+    "dates": [
+      "2026-03-15"
+    ],
+    "event": {
+      "name": "ICC T20 World Cup 2026",
+      "match_number": 56
+    },
+    "match_type": "T20",
+    "gender": "male",
+    "city": "Mumbai",
+    "venue": "Wankhede Stadium",
+    "teams": [
+      "India",
+      "Australia"
+    ],
+    "toss": {
+      "winner": "Australia",
+      "decision": "bat"
+    },
+    "outcome": {
+      "winner": "Australia",
+      "by": {
+        "runs": 48
+      }
+    },
+    "players": {
+      "India": [
+        "Player A",
+        "Player B",
+        "Player C"
+      ],
+      "Australia": [
+        "Player X",
+        "Player Y",
+        "Player Z"
+      ]
+    }
+  },
+  "innings": [
+    {
+      "team": "Australia",
+      "overs": [
+        {
+          "over": 0,
+          "deliveries": [
+            {
+              "batter": "Player A",
+              "bowler": "Player X",
+              "non_striker": "Player B",
+              "runs": {
+                "batter": 4,
+                "extras": 0,
+                "total": 4
+              }
+            },
+            {
+              "batter": "Player A",
+              "bowler": "Player X",
+              "non_striker": "Player B",
+              "runs": {
+                "batter": 6,
+                "extras": 0,
+                "total": 6
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
