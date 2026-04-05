@@ -7,20 +7,27 @@ from src.config import get_config, resolve_path
 
 # ── DB Availability Check ──────────────────────────────────────────────────
 
-@st.cache_resource
+# Module-level cache — avoids @st.cache_resource interfering with exception handling
+_DB_CON = None
+_DB_CHECKED = False
+
+
 def get_hub_con():
     """Return a DuckDB connection, or None if the database file doesn't exist."""
+    global _DB_CON, _DB_CHECKED
+    if _DB_CHECKED:
+        return _DB_CON
+    _DB_CHECKED = True
     try:
         cfg = get_config()
         db_path = str(resolve_path(cfg["paths"]["duckdb_path"]))
         if not os.path.exists(db_path):
+            _DB_CON = None
             return None
-        # Use read_only=True; catch ANY error including duckdb.IOException
-        try:
-            return duckdb.connect(db_path, read_only=True)
-        except BaseException:
-            return None
-    except BaseException:
+        _DB_CON = duckdb.connect(db_path, read_only=True)
+        return _DB_CON
+    except:  # bare except — catches C-extension duckdb.IOException too
+        _DB_CON = None
         return None
 
 
