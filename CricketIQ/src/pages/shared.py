@@ -15,8 +15,12 @@ def get_hub_con():
         db_path = str(resolve_path(cfg["paths"]["duckdb_path"]))
         if not os.path.exists(db_path):
             return None
-        return duckdb.connect(db_path, read_only=True)
-    except Exception:
+        # Use read_only=True; catch ANY error including duckdb.IOException
+        try:
+            return duckdb.connect(db_path, read_only=True)
+        except BaseException:
+            return None
+    except BaseException:
         return None
 
 
