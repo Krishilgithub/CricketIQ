@@ -13,6 +13,10 @@ def gather_query_context(query: str) -> str:
     """Orchestrates DB retrieval to create the system prompt."""
     con = get_con()
     entities = extract_entities(query, con)
-    con.close()
+    if con is not None:
+        try:
+            con.close()
+        except:
+            pass
     
     return build_agent_system_prompt(entities)

@@ -11,6 +11,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# ── Disable LangSmith tracing when API key is not configured ───────────────
+# Prevents 403 Forbidden errors on Streamlit Cloud when LANGCHAIN_API_KEY
+# is not set in the app's secrets.
+if not os.environ.get("LANGCHAIN_API_KEY") and not os.environ.get("LANGSMITH_API_KEY"):
+    os.environ["LANGCHAIN_TRACING_V2"] = "false"
+    os.environ["LANGSMITH_TRACING"] = "false"
+
 from src.pages.shared import THEME_CSS
 from src.logger import get_logger
 
