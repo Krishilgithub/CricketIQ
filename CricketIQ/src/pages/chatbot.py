@@ -1,4 +1,4 @@
-"""AI Analyst chatbot page — Text-to-SQL with context memory and SQL sandbox."""
+"""AI Chat Bot page — Text-to-SQL with context memory and SQL sandbox."""
 import re, json, uuid
 import streamlit as st
 import pandas as pd

@@ -1,17 +1,14 @@
-"""Intelligence Hub dashboard page — KPI overview + 4 persona tabs."""
+"""Intelligence Hub dashboard page — KPI overview + 3 persona tabs."""
 import streamlit as st
 import plotly.express as px
-import plotly.graph_objects as go
 
 from src.pages.shared import (
-    get_global_kpis, get_teams, get_venues,
+    get_global_kpis, get_venues,
     get_phase_data, get_toss_recommendation,
     get_top_batters, get_top_bowlers, get_venue_heatmap,
     get_exciting_matches, get_highest_scores, get_best_bowling,
-    get_h2h_rate, get_venue_avg, get_team_form,
-    get_hub_con, load_model,
+    get_hub_con,
 )
-import pandas as pd
 
 
 def render():
@@ -30,9 +27,7 @@ def render():
     st.markdown("---")
 
     tab1, tab2, tab3 = st.tabs(["👨‍💼 Coach View", "📊 Management", "📺 Fan / Media"])
-    teams_list = get_teams()
     venues_list = get_venues()
-    champion = load_model()
 
     # ── Tab 1: Coach View ────────────────────────────────────────────────
     with tab1:
