@@ -12,7 +12,7 @@ from src.chat.intent_classifier import classify_intent
 from src.chat.entity_extractor import extract_prediction_entities
 from src.ml.predictor import predict_match
 from src.ui.prediction_display import render_prediction_result
-from src.pages.shared import get_hub_con
+from src.pages.shared import get_hub_con, db_available
 
 @traceable(run_type="chain", name="User Chat Interaction")
 def process_chat(user_input: str, history: list, st_placeholder) -> str:
@@ -67,7 +67,7 @@ def process_chat(user_input: str, history: list, st_placeholder) -> str:
     def st_session_cb(sql_query, db_result):
         hub_con = get_hub_con()
         try:
-            result_df = hub_con.execute(sql_query).df()
+            result_df = hub_con.execute(sql_query).df() if hub_con is not None else None
         except Exception:
             result_df = None
         
@@ -129,23 +129,26 @@ def render():
 
     hub_con = get_hub_con()
 
-    # ── SQL Sandbox ────────────────────────────────────────────────────────
+    # ── SQL Sandbox ──────────────────────────────────────────────────
     with st.expander("🛠️ Interactive SQL Sandbox", expanded=False):
-        st.info("Write your own SQL query against the `main_gold` schema to explore the database directly.")
-        with st.form("sandbox_form"):
-            default_query = "SELECT * FROM main_gold.fact_matches LIMIT 5"
-            edited_sql = st.text_area("SQL Query", value=default_query, height=120, key="sandbox_sql")
-            col_run, col_export = st.columns([1, 1])
-            if col_run.form_submit_button("▶️ Run Query"):
-                try:
-                    df = hub_con.execute(edited_sql).df()
-                    st.success(f"✅ Query returned {len(df)} rows.")
-                    st.dataframe(df, use_container_width=True, hide_index=True)
-                    # CSV export
-                    csv = df.to_csv(index=False).encode("utf-8")
-                    st.download_button("⬇️ Download CSV", csv, "query_result.csv", "text/csv")
-                except Exception as e:
-                    st.error(f"SQL Error: {e}")
+        if not db_available():
+            st.info("🗄️ The SQL Sandbox requires the local DuckDB database which is not available on this deployment. Run the app locally to use this feature.")
+        else:
+            st.info("Write your own SQL query against the `main_gold` schema to explore the database directly.")
+            with st.form("sandbox_form"):
+                default_query = "SELECT * FROM main_gold.fact_matches LIMIT 5"
+                edited_sql = st.text_area("SQL Query", value=default_query, height=120, key="sandbox_sql")
+                col_run, col_export = st.columns([1, 1])
+                if col_run.form_submit_button("▶️ Run Query"):
+                    try:
+                        df = hub_con.execute(edited_sql).df()
+                        st.success(f"✅ Query returned {len(df)} rows.")
+                        st.dataframe(df, use_container_width=True, hide_index=True)
+                        # CSV export
+                        csv = df.to_csv(index=False).encode("utf-8")
+                        st.download_button("⬇️ Download CSV", csv, "query_result.csv", "text/csv")
+                    except Exception as e:
+                        st.error(f"SQL Error: {e}")
 
     st.markdown("---")
 

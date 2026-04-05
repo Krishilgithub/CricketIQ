@@ -7,7 +7,7 @@ from src.pages.shared import (
     get_phase_data, get_toss_recommendation,
     get_top_batters, get_top_bowlers, get_venue_heatmap,
     get_exciting_matches, get_highest_scores, get_best_bowling,
-    get_hub_con,
+    db_available, show_db_unavailable_warning,
 )
 
 
@@ -16,6 +16,10 @@ def render():
     st.markdown("""<div class='metric-card'>
     Explore pre-match predictions, venue behaviors, and strategic toss recommendations.
     </div>""", unsafe_allow_html=True)
+
+    if not db_available():
+        show_db_unavailable_warning()
+        return
 
     # ── Global KPIs ─────────────────────────────────────────────────────────
     kpis = get_global_kpis()

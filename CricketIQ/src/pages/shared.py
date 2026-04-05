@@ -5,42 +5,106 @@ import pandas as pd
 import duckdb
 from src.config import get_config, resolve_path
 
-# ── DB Connections ─────────────────────────────────────────────────────────
+# ── DB Availability Check ──────────────────────────────────────────────────
 
 @st.cache_resource
 def get_hub_con():
-    cfg = get_config()
-    return duckdb.connect(str(resolve_path(cfg["paths"]["duckdb_path"])), read_only=True)
+    """Return a DuckDB connection, or None if the database file doesn't exist."""
+    try:
+        cfg = get_config()
+        db_path = str(resolve_path(cfg["paths"]["duckdb_path"]))
+        if not os.path.exists(db_path):
+            return None
+        return duckdb.connect(db_path, read_only=True)
+    except Exception:
+        return None
+
+
+def db_available() -> bool:
+    """Check whether the DuckDB database is accessible."""
+    return get_hub_con() is not None
+
+
+def show_db_unavailable_warning():
+    """Display a consistent warning when the database is not present."""
+    st.warning(
+        "⚠️ **Database not available on this deployment.**\n\n"
+        "The CricketIQ analytics database (`cricketiq.duckdb`) is built locally from "
+        "Cricsheet match data using the dbt pipeline. It is not included in the "
+        "repository due to its large size.\n\n"
+        "**To use the full analytics features:**\n"
+        "1. Clone the repo locally\n"
+        "2. Run `python -m src.etl.build_db` to build the database\n"
+        "3. Run the app with `streamlit run CricketIQ/src/app.py`\n\n"
+        "The **AI Chat Bot** and **Match Prediction** pages are available in demo mode.",
+        icon="🗄️",
+    )
 
 
 @st.cache_resource(ttl=60)
 def load_model():
     """Load champion model. TTL=60s ensures new model is picked up after retraining."""
-    cfg = get_config()
-    db_path = str(resolve_path(cfg["paths"]["models_dir"])) + "/champion_model.pkl"
-    if os.path.exists(db_path):
-        with open(db_path, "rb") as f:
-            return pickle.load(f)
+    try:
+        cfg = get_config()
+        db_path = str(resolve_path(cfg["paths"]["models_dir"])) + "/champion_model.pkl"
+        if os.path.exists(db_path):
+            with open(db_path, "rb") as f:
+                return pickle.load(f)
+    except Exception:
+        pass
     return None
+
+
+# ── Safe Query Helper ───────────────────────────────────────────────────────
+
+def _safe_query(query: str, fallback=None):
+    """Execute a DuckDB query safely; return fallback on any error."""
+    con = get_hub_con()
+    if con is None:
+        return fallback if fallback is not None else pd.DataFrame()
+    try:
+        return con.execute(query).df()
+    except Exception:
+        return fallback if fallback is not None else pd.DataFrame()
+
+
+def _safe_scalar(query: str, default=0.5):
+    """Execute a scalar query and return its first cell safely."""
+    con = get_hub_con()
+    if con is None:
+        return default
+    try:
+        row = con.execute(query).df()
+        if row.empty:
+            return default
+        val = row.iloc[0, 0]
+        return float(val) if val is not None else default
+    except Exception:
+        return default
 
 
 # ── Data Loaders ────────────────────────────────────────────────────────────
 
 @st.cache_data
 def get_teams():
-    con = get_hub_con()
-    return con.execute("SELECT DISTINCT team_1 FROM main_gold.fact_matches ORDER BY team_1").df()["team_1"].tolist()
+    df = _safe_query("SELECT DISTINCT team_1 FROM main_gold.fact_matches ORDER BY team_1")
+    if df.empty or "team_1" not in df.columns:
+        return ["India", "Australia", "England", "Pakistan", "New Zealand",
+                "South Africa", "West Indies", "Sri Lanka"]
+    return df["team_1"].tolist()
 
 
 @st.cache_data
 def get_venues():
-    con = get_hub_con()
-    return con.execute("SELECT DISTINCT venue FROM main_gold.fact_matches ORDER BY venue").df()["venue"].tolist()
+    df = _safe_query("SELECT DISTINCT venue FROM main_gold.fact_matches ORDER BY venue")
+    if df.empty or "venue" not in df.columns:
+        return ["Wankhede Stadium", "MCG", "Lord's", "Eden Gardens",
+                "Headingley", "The Oval", "SuperSport Park"]
+    return df["venue"].tolist()
 
 
 @st.cache_data
 def get_global_kpis():
-    con = get_hub_con()
     q = """
     SELECT
         (SELECT COUNT(*) FROM main_gold.fact_matches) as total_matches,
@@ -48,6 +112,9 @@ def get_global_kpis():
         (SELECT COUNT(*) FROM main_gold.fact_wickets) as total_wickets,
         (SELECT COUNT(DISTINCT batter) FROM main_gold.fact_deliveries) as total_players
     """
+    con = get_hub_con()
+    if con is None:
+        return pd.Series({"total_matches": 0, "total_runs": 0, "total_wickets": 0, "total_players": 0})
     try:
         return con.execute(q).df().iloc[0]
     except Exception:
@@ -57,134 +124,162 @@ def get_global_kpis():
 @st.cache_data
 def get_h2h_rate(team1, team2=None):
     """Phase 22 FIX: Pairwise H2H win rate of team1 vs team2."""
-    con = get_hub_con()
-    if team2:
-        # Pairwise H2H: find matches where both teams played
-        q = f"""
-        WITH matchup AS (
-            SELECT m.match_id, m.winner
-            FROM main_gold.fact_matches m
-            JOIN main_gold.fact_innings i1 ON m.match_id = i1.match_id AND i1.batting_team = '{team1}'
-            JOIN main_gold.fact_innings i2 ON m.match_id = i2.match_id AND i2.batting_team = '{team2}'
-            WHERE m.result_type NOT IN ('no result', 'tie')
-        )
-        SELECT COUNT(*) as total,
-               SUM(CASE WHEN winner = '{team1}' THEN 1 ELSE 0 END) as wins
-        FROM matchup
-        """
-    else:
-        q = f"""
-        SELECT COUNT(*) as total,
-               SUM(CASE WHEN winner = '{team1}' THEN 1 ELSE 0 END) as wins
-        FROM main_gold.fact_matches
-        WHERE result_type NOT IN ('no result', 'tie')
-          AND (toss_winner = '{team1}' OR winner = '{team1}')
-        """
-    row = con.execute(q).df().iloc[0]
-    total = max(float(row["total"]), 1)
-    return float(row["wins"]) / total
+    if not db_available():
+        return 0.5
+    try:
+        con = get_hub_con()
+        if team2:
+            q = f"""
+            WITH matchup AS (
+                SELECT m.match_id, m.winner
+                FROM main_gold.fact_matches m
+                JOIN main_gold.fact_innings i1 ON m.match_id = i1.match_id AND i1.batting_team = '{team1}'
+                JOIN main_gold.fact_innings i2 ON m.match_id = i2.match_id AND i2.batting_team = '{team2}'
+                WHERE m.result_type NOT IN ('no result', 'tie')
+            )
+            SELECT COUNT(*) as total,
+                   SUM(CASE WHEN winner = '{team1}' THEN 1 ELSE 0 END) as wins
+            FROM matchup
+            """
+        else:
+            q = f"""
+            SELECT COUNT(*) as total,
+                   SUM(CASE WHEN winner = '{team1}' THEN 1 ELSE 0 END) as wins
+            FROM main_gold.fact_matches
+            WHERE result_type NOT IN ('no result', 'tie')
+              AND (toss_winner = '{team1}' OR winner = '{team1}')
+            """
+        row = con.execute(q).df().iloc[0]
+        total = max(float(row["total"]), 1)
+        return float(row["wins"]) / total
+    except Exception:
+        return 0.5
 
 
 @st.cache_data
 def get_venue_avg(venue):
-    con = get_hub_con()
-    q = f"""
-    SELECT AVG(i.total_runs) as avg_runs
-    FROM main_gold.fact_innings i
-    JOIN main_gold.fact_matches m ON i.match_id = m.match_id
-    WHERE m.venue = '{venue}' AND i.innings_number = 1
-    """
-    row = con.execute(q).df().iloc[0]
-    return float(row["avg_runs"] or 150)
+    if not db_available():
+        return 150.0
+    try:
+        con = get_hub_con()
+        q = f"""
+        SELECT AVG(i.total_runs) as avg_runs
+        FROM main_gold.fact_innings i
+        JOIN main_gold.fact_matches m ON i.match_id = m.match_id
+        WHERE m.venue = '{venue}' AND i.innings_number = 1
+        """
+        row = con.execute(q).df().iloc[0]
+        return float(row["avg_runs"] or 150)
+    except Exception:
+        return 150.0
 
 
 @st.cache_data
 def get_venue_chase_rate(venue):
     """Phase 22: Chase success rate at venue."""
-    con = get_hub_con()
-    q = f"""
-    SELECT COUNT(*) as total,
-           SUM(CASE 
-               WHEN (toss_decision = 'bat' AND team_1_win = 0) OR (toss_decision = 'field' AND team_1_win = 1)
-               THEN 1 ELSE 0 END) as chase_wins
-    FROM main_gold.fact_matches
-    WHERE venue = '{venue}' AND result_type NOT IN ('no result', 'tie')
-    """
-    row = con.execute(q).df().iloc[0]
-    total = max(float(row["total"]), 1)
-    return float(row["chase_wins"]) / total
+    if not db_available():
+        return 0.5
+    try:
+        con = get_hub_con()
+        q = f"""
+        SELECT COUNT(*) as total,
+               SUM(CASE
+                   WHEN (toss_decision = 'bat' AND team_1_win = 0) OR (toss_decision = 'field' AND team_1_win = 1)
+                   THEN 1 ELSE 0 END) as chase_wins
+        FROM main_gold.fact_matches
+        WHERE venue = '{venue}' AND result_type NOT IN ('no result', 'tie')
+        """
+        row = con.execute(q).df().iloc[0]
+        total = max(float(row["total"]), 1)
+        return float(row["chase_wins"]) / total
+    except Exception:
+        return 0.5
 
 
 @st.cache_data
 def get_team_form(team, window=5):
-    """Phase 22 FIX: Independent team form — queries ALL matches the team played."""
-    con = get_hub_con()
-    q = f"""
-    WITH team_matches AS (
-        SELECT m.match_id, m.match_date, m.winner
-        FROM main_gold.fact_matches m
-        JOIN main_gold.fact_innings i ON m.match_id = i.match_id AND i.batting_team = '{team}'
-        WHERE m.result_type NOT IN ('no result', 'tie')
-        GROUP BY m.match_id, m.match_date, m.winner
-        ORDER BY m.match_date DESC
-        LIMIT {window}
-    )
-    SELECT ROUND(AVG(CASE WHEN winner = '{team}' THEN 1.0 ELSE 0.0 END)::FLOAT, 3) as form
-    FROM team_matches
-    """
-    row = con.execute(q).df().iloc[0]
-    return float(row["form"] if row["form"] is not None else 0.5)
+    """Phase 22 FIX: Independent team form."""
+    if not db_available():
+        return 0.5
+    try:
+        con = get_hub_con()
+        q = f"""
+        WITH team_matches AS (
+            SELECT m.match_id, m.match_date, m.winner
+            FROM main_gold.fact_matches m
+            JOIN main_gold.fact_innings i ON m.match_id = i.match_id AND i.batting_team = '{team}'
+            WHERE m.result_type NOT IN ('no result', 'tie')
+            GROUP BY m.match_id, m.match_date, m.winner
+            ORDER BY m.match_date DESC
+            LIMIT {window}
+        )
+        SELECT ROUND(AVG(CASE WHEN winner = '{team}' THEN 1.0 ELSE 0.0 END)::FLOAT, 3) as form
+        FROM team_matches
+        """
+        row = con.execute(q).df().iloc[0]
+        return float(row["form"] if row["form"] is not None else 0.5)
+    except Exception:
+        return 0.5
 
 
 @st.cache_data
 def get_team_momentum(team):
     """Phase 22: Weighted momentum index (recent 5 matches)."""
-    con = get_hub_con()
-    q = f"""
-    WITH team_matches AS (
-        SELECT m.match_id, m.match_date,
-               CASE WHEN m.winner = '{team}' THEN 1.0 ELSE 0.0 END as won
-        FROM main_gold.fact_matches m
-        JOIN main_gold.fact_innings i ON m.match_id = i.match_id AND i.batting_team = '{team}'
-        WHERE m.result_type NOT IN ('no result', 'tie')
-        GROUP BY m.match_id, m.match_date, m.winner
-        ORDER BY m.match_date DESC
-        LIMIT 5
-    )
-    SELECT won FROM team_matches ORDER BY match_date ASC
-    """
-    df = con.execute(q).df()
-    if df.empty:
+    if not db_available():
         return 0.5
-    wins = df["won"].values
-    weights = list(range(1, len(wins) + 1))
-    return float(sum(w * v for w, v in zip(weights, wins)) / sum(weights))
+    try:
+        con = get_hub_con()
+        q = f"""
+        WITH team_matches AS (
+            SELECT m.match_id, m.match_date,
+                   CASE WHEN m.winner = '{team}' THEN 1.0 ELSE 0.0 END as won
+            FROM main_gold.fact_matches m
+            JOIN main_gold.fact_innings i ON m.match_id = i.match_id AND i.batting_team = '{team}'
+            WHERE m.result_type NOT IN ('no result', 'tie')
+            GROUP BY m.match_id, m.match_date, m.winner
+            ORDER BY m.match_date DESC
+            LIMIT 5
+        )
+        SELECT won FROM team_matches ORDER BY match_date ASC
+        """
+        df = con.execute(q).df()
+        if df.empty:
+            return 0.5
+        wins = df["won"].values
+        weights = list(range(1, len(wins) + 1))
+        return float(sum(w * v for w, v in zip(weights, wins)) / sum(weights))
+    except Exception:
+        return 0.5
 
 
 @st.cache_data
 def get_team_venue_win_rate(team, venue):
     """Phase 22: Team's win rate at specific venue."""
-    con = get_hub_con()
-    q = f"""
-    WITH team_venue AS (
-        SELECT m.match_id, m.winner
-        FROM main_gold.fact_matches m
-        JOIN main_gold.fact_innings i ON m.match_id = i.match_id AND i.batting_team = '{team}'
-        WHERE m.venue = '{venue}' AND m.result_type NOT IN ('no result', 'tie')
-        GROUP BY m.match_id, m.winner
-    )
-    SELECT COUNT(*) as total,
-           SUM(CASE WHEN winner = '{team}' THEN 1 ELSE 0 END) as wins
-    FROM team_venue
-    """
-    row = con.execute(q).df().iloc[0]
-    total = max(float(row["total"]), 1)
-    return float(row["wins"]) / total
+    if not db_available():
+        return 0.5
+    try:
+        con = get_hub_con()
+        q = f"""
+        WITH team_venue AS (
+            SELECT m.match_id, m.winner
+            FROM main_gold.fact_matches m
+            JOIN main_gold.fact_innings i ON m.match_id = i.match_id AND i.batting_team = '{team}'
+            WHERE m.venue = '{venue}' AND m.result_type NOT IN ('no result', 'tie')
+            GROUP BY m.match_id, m.winner
+        )
+        SELECT COUNT(*) as total,
+               SUM(CASE WHEN winner = '{team}' THEN 1 ELSE 0 END) as wins
+        FROM team_venue
+        """
+        row = con.execute(q).df().iloc[0]
+        total = max(float(row["total"]), 1)
+        return float(row["wins"]) / total
+    except Exception:
+        return 0.5
 
 
 @st.cache_data
 def get_phase_data(venue_sel):
-    con = get_hub_con()
     q = f"""
     SELECT
         CASE WHEN d.over_number <= 5 THEN 'Powerplay (0-5)'
@@ -198,12 +293,11 @@ def get_phase_data(venue_sel):
     WHERE m.venue = '{venue_sel}'
     GROUP BY 1 ORDER BY 1
     """
-    return con.execute(q).df()
+    return _safe_query(q)
 
 
 @st.cache_data
 def get_toss_recommendation(venue_sel):
-    con = get_hub_con()
     q = f"""
     SELECT toss_decision,
            COUNT(*) total,
@@ -212,12 +306,11 @@ def get_toss_recommendation(venue_sel):
     WHERE venue = '{venue_sel}' AND result_type NOT IN ('no result', 'tie')
     GROUP BY toss_decision
     """
-    return con.execute(q).df()
+    return _safe_query(q)
 
 
 @st.cache_data
 def get_top_batters():
-    con = get_hub_con()
     q = """
     SELECT batter, SUM(runs_batter) as runs,
            SUM(is_legal_ball) as balls,
@@ -228,12 +321,11 @@ def get_top_batters():
     GROUP BY batter HAVING balls > 100
     ORDER BY runs DESC LIMIT 15
     """
-    return con.execute(q).df()
+    return _safe_query(q)
 
 
 @st.cache_data
 def get_top_bowlers():
-    con = get_hub_con()
     q = """
     SELECT bowler, SUM(is_wicket) as wickets,
            SUM(is_legal_ball) as balls,
@@ -244,12 +336,11 @@ def get_top_bowlers():
     GROUP BY bowler HAVING balls > 100
     ORDER BY wickets DESC LIMIT 15
     """
-    return con.execute(q).df()
+    return _safe_query(q)
 
 
 @st.cache_data
 def get_venue_heatmap():
-    con = get_hub_con()
     q = """
     SELECT t.team as team, m.venue as venue,
            ROUND(AVG(CASE WHEN m.winner = t.team THEN 1.0 ELSE 0.0 END) * 100, 0) as win_pct,
@@ -259,12 +350,11 @@ def get_venue_heatmap():
     GROUP BY t.team, m.venue HAVING matches >= 5
     ORDER BY win_pct DESC
     """
-    return con.execute(q).df()
+    return _safe_query(q)
 
 
 @st.cache_data
 def get_exciting_matches():
-    con = get_hub_con()
     q = """
     SELECT m.match_id, m.match_date, m.event_name, m.venue, m.team_1, m.winner,
            m.result_margin,
@@ -278,12 +368,11 @@ def get_exciting_matches():
     ORDER BY margin_runs ASC
     LIMIT 20
     """
-    return con.execute(q).df()
+    return _safe_query(q)
 
 
 @st.cache_data
 def get_highest_scores():
-    con = get_hub_con()
     q = """
     SELECT batter, SUM(runs_batter) as innings_runs, m.event_name, m.match_date, team_1, winner
     FROM main_gold.fact_deliveries d
@@ -291,12 +380,11 @@ def get_highest_scores():
     GROUP BY d.batter, d.match_id, d.innings_number, m.event_name, m.match_date, m.team_1, m.winner
     ORDER BY innings_runs DESC LIMIT 10
     """
-    return con.execute(q).df()
+    return _safe_query(q)
 
 
 @st.cache_data
 def get_best_bowling():
-    con = get_hub_con()
     q = """
     SELECT bowler, SUM(is_wicket) as wickets, SUM(runs_batter + runs_extras) as runs_conceded,
            m.event_name, m.match_date
@@ -306,7 +394,7 @@ def get_best_bowling():
     HAVING wickets >= 3
     ORDER BY wickets DESC, runs_conceded ASC LIMIT 10
     """
-    return con.execute(q).df()
+    return _safe_query(q)
 
 
 # ── Shared CSS ─────────────────────────────────────────────────────────────
